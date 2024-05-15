@@ -1,7 +1,7 @@
 import {Maze} from "./maze";
 import {Cell} from "./maze.model";
 
-export class RectMazeV2 extends Maze {
+export class RectMaze extends Maze {
   board: Cell[][] = [];
 
   constructor(
@@ -9,6 +9,24 @@ export class RectMazeV2 extends Maze {
     public height: number = 50,
   ) {
     super();
+  }
+
+  randomizeV1() {
+    this.board = [];
+    for (let y = 0; y < this.height; y++) {
+      const row: Cell[] = [];
+      this.board.push(row);
+      for (let x = 0; x < this.width; x++) {
+        row.push({
+          x,
+          y,
+          wt: y == 0 || this.board[y-1][x].wb,
+          wl: x == 0 || this.board[y][x-1].wb,
+          wr: x == this.width - 1 || this.randomBinary(),
+          wb: y == this.height - 1 || this.randomBinary()
+        });
+      }
+    }
   }
 
   override randomize() {
@@ -27,10 +45,6 @@ export class RectMazeV2 extends Maze {
     let x = 0;
     let y = 0;
     // let vector =
-  }
-
-  randVector(y: number, x: number) {
-
   }
 
   /**
@@ -62,4 +76,5 @@ export class RectMazeV2 extends Maze {
       }
     }
   }
+
 }

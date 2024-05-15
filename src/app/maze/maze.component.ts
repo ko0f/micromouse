@@ -1,8 +1,8 @@
 import {Component, OnInit} from '@angular/core';
 import * as d3 from 'd3';
 import {Cell} from "../../logic/maze.model";
-import {RectMazeV2} from "../../logic/rect-maze-v2";
 import {ContestMazesBir} from "../../assets/contest-mazes.bir";
+import {RectMaze} from "../../logic/rect-maze";
 
 @Component({
   selector: 'app-maze',
@@ -13,10 +13,10 @@ import {ContestMazesBir} from "../../assets/contest-mazes.bir";
 })
 export class MazeComponent implements OnInit {
 
-  maze: RectMazeV2;
+  maze: RectMaze;
   svg: any = null;
 
-  brickSize: number = 20;
+  brickSize: number = 30;
   gap: number = 0;
   padding: number = 4;
   wallWidth: number = 2;
@@ -24,7 +24,7 @@ export class MazeComponent implements OnInit {
   uncarvedFill: string = "#333";
 
   constructor() {
-    this.maze = new RectMazeV2(30, 30);
+    this.maze = new RectMaze();
     this.maze.loadBir(ContestMazesBir.apec1993);
   }
 
