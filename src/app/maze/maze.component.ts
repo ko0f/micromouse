@@ -18,7 +18,7 @@ export class MazeComponent implements OnInit {
   brickSize: number = 20;
   gap: number = 0;
   padding: number = 4;
-  wallWidth: number = 1;
+  wallWidth: number = 2;
 
   constructor() {
     this.maze = new RectangularMaze(30, 30);
@@ -53,11 +53,12 @@ export class MazeComponent implements OnInit {
     ;
   }
 
-  dashArray(walls: CellWalls): string {
+  dashArray(cell: Cell): string {
     return '' +
-      (walls.wt ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
-      (walls.wr ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
-      (walls.wb ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
-      (walls.wl ? `${this.brickSize} 0` : `0 ${this.brickSize}`);
+      (!cell.y ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
+      (cell.wr ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
+      (cell.wb ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
+      (!cell.x ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `)
+      ;
   }
 }
