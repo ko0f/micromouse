@@ -1,7 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import * as d3 from 'd3';
 import {Cell} from "../../logic/maze.model";
-import {ContestMazesBir} from "../../assets/contest-mazes.bir";
+import {ContestMazesEst} from "../../assets/contest-mazes.est";
 import {RectMaze} from "../../logic/rect-maze";
 
 @Component({
@@ -25,7 +25,7 @@ export class MazeComponent implements OnInit {
 
   constructor() {
     this.maze = new RectMaze();
-    this.maze.loadBir(ContestMazesBir.london1992);
+    this.maze.load(ContestMazesEst.london1992);
   }
 
   ngOnInit() {
@@ -59,8 +59,8 @@ export class MazeComponent implements OnInit {
   dashArray(cell: Cell): string {
     return '' +
       (!cell.y ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
-      (cell.wr || cell.x == this.maze.width-1 ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
-      (cell.wb || cell.y == this.maze.height-1 ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
+      (cell.eastWall || cell.x == this.maze.width-1 ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
+      (cell.southWall || cell.y == this.maze.height-1 ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
       (!cell.x ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `)
       ;
   }
