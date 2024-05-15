@@ -1,32 +1,15 @@
 import {Maze} from "./maze";
-import {Cell} from "./maze.model";
+import {BirMaze, Cell, Coord} from "./maze.model";
 
 export class RectMaze extends Maze {
   board: Cell[][] = [];
+  win: Coord = {x: 0, y: 0};
 
   constructor(
     public width: number = 50,
     public height: number = 50,
   ) {
     super();
-  }
-
-  randomizeV1() {
-    this.board = [];
-    for (let y = 0; y < this.height; y++) {
-      const row: Cell[] = [];
-      this.board.push(row);
-      for (let x = 0; x < this.width; x++) {
-        row.push({
-          x,
-          y,
-          wt: y == 0 || this.board[y-1][x].wb,
-          wl: x == 0 || this.board[y][x-1].wb,
-          wr: x == this.width - 1 || this.randomBinary(),
-          wb: y == this.height - 1 || this.randomBinary()
-        });
-      }
-    }
   }
 
   override randomize() {
@@ -54,16 +37,17 @@ export class RectMaze extends Maze {
    * r = right wall
    * @param bir
    */
-  loadBir(bir: string[]) {
-    if (!bir.length)
+  loadBir(birMaze: BirMaze) {
+    if (!birMaze?.bir?.length)
       throw new Error(`Empty BIR string`);
+    this.win = birMaze.win;
     this.board = [];
-    this.height = bir.length;
-    this.width = bir[0].length;
+    this.height = birMaze.bir.length;
+    this.width = birMaze.bir[0].length;
     for (let y = 0; y < this.height; y++) {
       const row: Cell[] = [];
       this.board.push(row);
-      const birRow = bir[y];
+      const birRow = birMaze.bir[y];
       for (let x = 0; x < this.width; x++) {
         const birCell = birRow[x]; // b/i/r
         row.push({

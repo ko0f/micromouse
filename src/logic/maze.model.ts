@@ -10,3 +10,13 @@ export interface Cell extends CellWalls {
   y: number;
   carved?: boolean;
 }
+
+export interface Coord {
+  y: number;
+  x: number;
+}
+
+export interface BirMaze {
+  bir: string[];
+  win: Coord;
+}

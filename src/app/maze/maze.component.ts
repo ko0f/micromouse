@@ -16,16 +16,16 @@ export class MazeComponent implements OnInit {
   maze: RectMaze;
   svg: any = null;
 
-  brickSize: number = 30;
+  brickSize: number = 25;
   gap: number = 0;
   padding: number = 4;
   wallWidth: number = 2;
-  carvedFill: string = "#b0d9ef";
+  carvedFill: string = "#efefef";
   uncarvedFill: string = "#333";
 
   constructor() {
     this.maze = new RectMaze();
-    this.maze.loadBir(ContestMazesBir.apec1993);
+    this.maze.loadBir(ContestMazesBir.london1992);
   }
 
   ngOnInit() {
