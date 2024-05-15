@@ -1,7 +1,8 @@
 import {Component, OnInit} from '@angular/core';
-import {RectangularMaze} from "../../logic/rect-maze";
 import * as d3 from 'd3';
-import {Cell, CellWalls} from "../../logic/maze.model";
+import {Cell} from "../../logic/maze.model";
+import {RectMazeV2} from "../../logic/rect-maze-v2";
+import {ContestMazesBir} from "../../assets/contest-mazes.bir";
 
 @Component({
   selector: 'app-maze',
@@ -12,17 +13,19 @@ import {Cell, CellWalls} from "../../logic/maze.model";
 })
 export class MazeComponent implements OnInit {
 
-  maze: RectangularMaze;
+  maze: RectMazeV2;
   svg: any = null;
 
   brickSize: number = 20;
   gap: number = 0;
   padding: number = 4;
   wallWidth: number = 2;
+  carvedFill: string = "#b0d9ef";
+  uncarvedFill: string = "#333";
 
   constructor() {
-    this.maze = new RectangularMaze(30, 30);
-    this.maze.randomize();
+    this.maze = new RectMazeV2(30, 30);
+    this.maze.loadBir(ContestMazesBir.apec1993);
   }
 
   ngOnInit() {
@@ -46,7 +49,7 @@ export class MazeComponent implements OnInit {
       .attr("y", (d: Cell) => { return d.y * (this.brickSize + this.gap) + this.padding; })
       .attr("width", this.brickSize)
       .attr("height", this.brickSize)
-      .attr("fill", `#40b7ff`)
+      .attr("fill", (d: Cell) => d.carved ? this.carvedFill : this.uncarvedFill)
       .attr("stroke", `#222`)
       .attr("stroke-width", `${this.wallWidth}px`)
       .attr("stroke-dasharray", (d: Cell) => this.dashArray(d))
@@ -56,8 +59,8 @@ export class MazeComponent implements OnInit {
   dashArray(cell: Cell): string {
     return '' +
       (!cell.y ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
-      (cell.wr ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
-      (cell.wb ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
+      (cell.wr || cell.x == this.maze.width-1 ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
+      (cell.wb || cell.y == this.maze.height-1 ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
       (!cell.x ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `)
       ;
   }

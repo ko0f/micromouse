@@ -1,7 +1,7 @@
 import {Maze} from "./maze";
 import {Cell} from "./maze.model";
 
-export class RectangularMaze extends Maze {
+export class RectMazeV1 extends Maze {
   board: Cell[][] = [];
 
   constructor(

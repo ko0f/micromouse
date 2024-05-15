@@ -8,4 +8,5 @@ export interface CellWalls {
 export interface Cell extends CellWalls {
   x: number;
   y: number;
+  carved?: boolean;
 }
