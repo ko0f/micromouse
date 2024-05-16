@@ -44,7 +44,7 @@ export const ContestMazesEst = {
       'tsstsssssssssttt'
     ],
     win: {y: 7, x: 7},
-    initialLocation: {y: 15, x: 0},
+    initialLocation: {y: 14, x: 0},
     initialDirection: AbsDirection.north,
   } as EstMaze,
 }

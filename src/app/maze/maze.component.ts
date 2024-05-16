@@ -1,6 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import * as d3 from 'd3';
-import {Cell, Coords} from "../../logic/maze.model";
+import {AbsDirection, Cell, RelativeDirection} from "../../logic/maze.model";
 import {ContestMazesEst} from "../../logic/contest-mazes.est";
 import {RectMaze} from "../../logic/rect-maze";
 import {CellRect} from "./maze.component.model";
@@ -29,7 +29,7 @@ export class MazeComponent implements OnInit {
 
   constructor() {
     this.maze = new RectMaze();
-    this.maze.load(ContestMazesEst.apec1993);
+    this.maze.load(ContestMazesEst.london1992);
   }
 
   ngOnInit() {
@@ -37,18 +37,15 @@ export class MazeComponent implements OnInit {
       .attr("width", this.maze.width * (this.brickSize + this.gap) + this.padding * 2 - this.gap)
       .attr("height", this.maze.height * (this.brickSize + this.gap) + this.padding * 2 - this.gap);
     this.draw();
-    const mouseCoords = this.cellCoords(this.maze.mouse.location);
+
     this.mouseSvg = this.svg.append("image")
-      .attr('x', mouseCoords.xCenter - this.mouseSize/2)
-      .attr('y', mouseCoords.yCenter - this.mouseSize/2)
-      .attr('width', this.mouseSize)
-      .attr('height', this.mouseSize)
       .attr('xlink:href', '/assets/mouse.png');
+    this.drawMouse();
   }
 
   draw() {
     let row = this.svg.selectAll(".row")
-      .data(this.maze.board)
+      .data(this.maze.getBoard())
       .enter().append("g")
       .attr("class", "row");
 
@@ -65,6 +62,20 @@ export class MazeComponent implements OnInit {
       .attr("stroke-width", `${this.wallWidth}px`)
       .attr("stroke-dasharray", (d: Cell) => this.dashArray(d))
 
+    ;
+  }
+
+  drawMouse() {
+    const mouseCoords = this.cellCoords(this.maze.getMouseLocation());
+    this.mouseSvg
+      .attr('x', mouseCoords.xCenter - this.mouseSize/2)
+      .attr('y', mouseCoords.yCenter - this.mouseSize/2)
+      .attr('width', this.mouseSize)
+      .attr('height', this.mouseSize)
+      .style("transform", `rotate(${this.mouseRotation()}deg)`)
+      .style("transform-origin", `center`)
+      .style("transform-box", `content-box`)
+    ;
     ;
   }
 
@@ -87,5 +98,42 @@ export class MazeComponent implements OnInit {
       xCenter: (x2 + x1) / 2,
       yCenter: (y2 + y1) / 2,
     }
+  }
+
+  mouseRotation() {
+    switch (this.maze.getMouseDirection()) {
+      case AbsDirection.north:
+        return 0;
+      case AbsDirection.south:
+        return 180;
+      case AbsDirection.east:
+        return 90;
+      case AbsDirection.west:
+        return 270;
+    }
+  }
+
+  onKeyDown(event: KeyboardEvent) {
+    let changed = false;
+    if (event.key == 'ArrowRight') {
+      this.maze.turn(RelativeDirection.right);
+      changed = true;
+    } else if (event.key == 'ArrowLeft') {
+      this.maze.turn(RelativeDirection.left);
+      changed = true;
+    } else if (event.key == 'ArrowDown') {
+      this.maze.turn(RelativeDirection.back);
+      changed = true;
+    } else if (event.key == 'ArrowUp') {
+      const result = this.maze.moveForward(1);
+      if (!result)
+        alert(`You lost!`);
+      changed = true;
+    }
+    if (changed) {
+      this.drawMouse();
+      event.preventDefault();
+    }
+    // console.log(`key: ${event.key}  shift: ${event.shiftKey}  alt: ${event.altKey}`);
   }
 }

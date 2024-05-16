@@ -2,9 +2,9 @@ import {Maze} from "./maze";
 import {AbsDirection, Cell, Coords, EstMaze, MouseInterface, RelativeDirection} from "./maze.model";
 
 export class RectMaze extends Maze implements MouseInterface {
-  board: Cell[][] = [];
-  win: Coords = {x: 0, y: 0};
-  mouse: {
+  private board: Cell[][] = [];
+  private win: Coords = {x: 0, y: 0};
+  private mouse: {
     location: Coords;
     direction: AbsDirection;
   } = {
@@ -17,6 +17,18 @@ export class RectMaze extends Maze implements MouseInterface {
     public height: number = 16,
   ) {
     super();
+  }
+
+  getBoard(): Cell[][] {
+    return this.board;
+  }
+
+  getMouseDirection(): AbsDirection {
+    return this.mouse.direction;
+  }
+
+  getMouseLocation(): Coords {
+    return this.mouse.location;
   }
 
   override randomize() {
@@ -94,26 +106,27 @@ export class RectMaze extends Maze implements MouseInterface {
   }
 
   moveForward(cells: number): boolean {
+    const mouseCell = this.board[this.mouse.location.y][this.mouse.location.x];
     switch (this.mouse.direction) {
       case AbsDirection.north:
-        this.mouse.location.y -= cells;
-        if (this.mouse.location.y < 0)
+        if (mouseCell.northWall || this.mouse.location.y == 0)
           return false;
+        this.mouse.location.y -= cells;
         break;
       case AbsDirection.east:
-        this.mouse.location.x += cells;
-        if (this.mouse.location.x >= this.width)
+        if (mouseCell.eastWall || this.mouse.location.x == this.width-1)
           return false;
+        this.mouse.location.x += cells;
         break;
       case AbsDirection.south:
-        this.mouse.location.y += cells;
-        if (this.mouse.location.y >= this.height)
+        if (mouseCell.southWall || this.mouse.location.y == this.height-1)
           return false;
+        this.mouse.location.y += cells;
         break;
       case AbsDirection.west:
-        this.mouse.location.x -= cells;
-        if (this.mouse.location.x < 0)
+        if (mouseCell.westWall || this.mouse.location.x == 0)
           return false;
+        this.mouse.location.x -= cells;
         break;
     }
     return true;
@@ -121,5 +134,6 @@ export class RectMaze extends Maze implements MouseInterface {
 
   turn(relativeDir: RelativeDirection): void {
     this.mouse.direction = (this.mouse.direction + relativeDir) % 4;
+    console.log(this.mouse.direction);
   }
 }
