@@ -1,9 +1,10 @@
-import {Component, OnInit} from '@angular/core';
+import {ChangeDetectorRef, Component, OnInit} from '@angular/core';
 import * as d3 from 'd3';
 import {AbsDirection, Cell, RelativeDirection} from "../../logic/maze.model";
 import {ContestMazesEst} from "../../logic/contest-mazes.est";
 import {RectMaze} from "../../logic/rect-maze";
 import {CellRect} from "./maze.component.model";
+import {FloodfillMouse} from "../../logic/floodfill-mouse";
 
 @Component({
   selector: 'app-maze',
@@ -14,7 +15,8 @@ import {CellRect} from "./maze.component.model";
 })
 export class MazeComponent implements OnInit {
 
-  maze: RectMaze;
+  maze!: RectMaze;
+  mouse!: FloodfillMouse;
 
   svg: any = null;
   mouseSvg: any = null;
@@ -27,9 +29,17 @@ export class MazeComponent implements OnInit {
   carvedFill: string = "#efefef";
   uncarvedFill: string = "#333";
 
-  constructor() {
+  constructor(
+    private ref: ChangeDetectorRef,
+  ) {
+    this.reset();
+  }
+
+  reset() {
     this.maze = new RectMaze();
     this.maze.load(ContestMazesEst.london1992);
+
+    this.mouse = new FloodfillMouse(this.maze);
   }
 
   ngOnInit() {
@@ -135,5 +145,17 @@ export class MazeComponent implements OnInit {
       event.preventDefault();
     }
     // console.log(`key: ${event.key}  shift: ${event.shiftKey}  alt: ${event.altKey}`);
+  }
+
+  onSolveClick() {
+    this.mouse.solve();
+  }
+
+  onResetClick() {
+    this.reset();
+    this.ref.detectChanges();
+    this.draw();
+    this.drawMouse();
+    document.getElementById('maze')?.focus();
   }
 }

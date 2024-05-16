@@ -1,8 +1,8 @@
 import {Maze} from "./maze";
-import {AbsDirection, Cell, Coords, EstMaze, MouseInterface, RelativeDirection} from "./maze.model";
+import {AbsDirection, Cell, Coords, EstMaze, MazeBoard, MazeMouseInterface, RelativeDirection} from "./maze.model";
 
-export class RectMaze extends Maze implements MouseInterface {
-  private board: Cell[][] = [];
+export class RectMaze extends Maze implements MazeMouseInterface {
+  private board: MazeBoard = [];
   private win: Coords = {x: 0, y: 0};
   private mouse: {
     location: Coords;
@@ -19,7 +19,7 @@ export class RectMaze extends Maze implements MouseInterface {
     super();
   }
 
-  getBoard(): Cell[][] {
+  getBoard(): MazeBoard {
     return this.board;
   }
 
@@ -62,7 +62,7 @@ export class RectMaze extends Maze implements MouseInterface {
 
     this.win = estMaze.win;
     this.mouse.direction = estMaze.initialDirection;
-    this.mouse.location = estMaze.initialLocation;
+    this.mouse.location = {...estMaze.initialLocation};
 
     this.board = [];
     this.height = estMaze.est.length;

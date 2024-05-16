@@ -1,3 +1,5 @@
+export type MazeBoard = Cell[][];
+
 export interface CellWalls {
   northWall?: boolean;
   southWall?: boolean;
@@ -37,7 +39,7 @@ export enum RelativeDirection {
   left
 }
 
-export interface MouseInterface {
+export interface MazeMouseInterface {
   hasWall(relativeDir: RelativeDirection): boolean;
   hasReachedGoal(): boolean;
   turn(relativeDir: RelativeDirection): void;

@@ -1,7 +1,13 @@
-import {RectMaze} from "./rect-maze";
+import {MazeMouseInterface} from "./maze.model";
 
 export class Mouse {
 
-  constructor(maze: RectMaze) {
+  constructor(
+    public maze: MazeMouseInterface
+  ) {
+  }
+
+  solve() {
+    throw new Error(`Not implemented`);
   }
 }
