@@ -1,4 +1,4 @@
-import {EstMaze, AbsDirection} from "../logic/maze.model";
+import {EstMaze, AbsDirection} from "./maze.model";
 
 export const ContestMazesEst = {
   apec1993: {

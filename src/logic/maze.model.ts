@@ -11,15 +11,15 @@ export interface Cell extends CellWalls {
   carved?: boolean;
 }
 
-export interface Coord {
+export interface Coords {
   y: number;
   x: number;
 }
 
 export interface EstMaze {
   est: string[];
-  win: Coord;
-  initialLocation: Coord;
+  win: Coords;
+  initialLocation: Coords;
   initialDirection: AbsDirection;
 }
 

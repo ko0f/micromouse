@@ -1,11 +1,11 @@
 import {Maze} from "./maze";
-import {AbsDirection, Cell, Coord, EstMaze, MouseInterface, RelativeDirection} from "./maze.model";
+import {AbsDirection, Cell, Coords, EstMaze, MouseInterface, RelativeDirection} from "./maze.model";
 
 export class RectMaze extends Maze implements MouseInterface {
   board: Cell[][] = [];
-  win: Coord = {x: 0, y: 0};
+  win: Coords = {x: 0, y: 0};
   mouse: {
-    location: Coord;
+    location: Coords;
     direction: AbsDirection;
   } = {
     location: {x: 0, y: 0},
@@ -13,8 +13,8 @@ export class RectMaze extends Maze implements MouseInterface {
   };
 
   constructor(
-    public width: number = 50,
-    public height: number = 50,
+    public width: number = 16,
+    public height: number = 16,
   ) {
     super();
   }

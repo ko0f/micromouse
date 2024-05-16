@@ -1,8 +1,9 @@
 import {Component, OnInit} from '@angular/core';
 import * as d3 from 'd3';
-import {Cell} from "../../logic/maze.model";
-import {ContestMazesEst} from "../../assets/contest-mazes.est";
+import {Cell, Coords} from "../../logic/maze.model";
+import {ContestMazesEst} from "../../logic/contest-mazes.est";
 import {RectMaze} from "../../logic/rect-maze";
+import {CellRect} from "./maze.component.model";
 
 @Component({
   selector: 'app-maze',
@@ -14,9 +15,12 @@ import {RectMaze} from "../../logic/rect-maze";
 export class MazeComponent implements OnInit {
 
   maze: RectMaze;
+
   svg: any = null;
+  mouseSvg: any = null;
 
   brickSize: number = 25;
+  mouseSize: number = 20;
   gap: number = 0;
   padding: number = 4;
   wallWidth: number = 2;
@@ -25,7 +29,7 @@ export class MazeComponent implements OnInit {
 
   constructor() {
     this.maze = new RectMaze();
-    this.maze.load(ContestMazesEst.london1992);
+    this.maze.load(ContestMazesEst.apec1993);
   }
 
   ngOnInit() {
@@ -33,6 +37,13 @@ export class MazeComponent implements OnInit {
       .attr("width", this.maze.width * (this.brickSize + this.gap) + this.padding * 2 - this.gap)
       .attr("height", this.maze.height * (this.brickSize + this.gap) + this.padding * 2 - this.gap);
     this.draw();
+    const mouseCoords = this.cellCoords(this.maze.mouse.location);
+    this.mouseSvg = this.svg.append("image")
+      .attr('x', mouseCoords.xCenter - this.mouseSize/2)
+      .attr('y', mouseCoords.yCenter - this.mouseSize/2)
+      .attr('width', this.mouseSize)
+      .attr('height', this.mouseSize)
+      .attr('xlink:href', '/assets/mouse.png');
   }
 
   draw() {
@@ -53,6 +64,7 @@ export class MazeComponent implements OnInit {
       .attr("stroke", `#222`)
       .attr("stroke-width", `${this.wallWidth}px`)
       .attr("stroke-dasharray", (d: Cell) => this.dashArray(d))
+
     ;
   }
 
@@ -63,5 +75,17 @@ export class MazeComponent implements OnInit {
       (cell.southWall || cell.y == this.maze.height-1 ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
       (!cell.x ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `)
       ;
+  }
+
+  cellCoords(cell: Cell): CellRect {
+    const y1 = cell.y * (this.brickSize + this.gap) + this.padding;
+    const x1 = cell.x * (this.brickSize + this.gap) + this.padding;
+    const y2 = y1 + this.brickSize;
+    const x2 = x1 + this.brickSize;
+    return {
+      y1, x1, y2, x2,
+      xCenter: (x2 + x1) / 2,
+      yCenter: (y2 + y1) / 2,
+    }
   }
 }

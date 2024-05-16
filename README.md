@@ -1,6 +1,8 @@
-# MouseMaze
+# Micromouse Maze Sim
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.1.1.
+Algorithms for maze generation and simulating mouse solving of a maze.
+
+Read full contest rules here: https://attend.ieee.org/r2sac-2020/wp-content/uploads/sites/175/2020/01/MicroMouse_Rules_2020.pdf
 
 ## Development server
 
