@@ -1,6 +1,9 @@
 import {Mouse} from "./mouse";
 
-export class FloodfillMouse extends Mouse {
+export class NaiveMouse extends Mouse {
+
+
+
   override solve() {
 
   }

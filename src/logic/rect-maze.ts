@@ -47,7 +47,7 @@ export class RectMaze extends Maze implements MazeMouseInterface {
     }
     // carv maze
     const totalCells = this.height * this.width;
-    let carvedCells = 0;
+    let exploredCells = 0;
     let x = 0;
     let y = 0;
     // let vector =
@@ -78,7 +78,7 @@ export class RectMaze extends Maze implements MazeMouseInterface {
       for (let x = 0; x < this.width; x++) {
         const estCell = estRow[x]; // b/i/r
         row.push({
-          x, y, carved: false,
+          x, y, explored: false,
           northWall: y == 0 || this.board[y-1][x].southWall,
           southWall: 'st'.includes(estCell),
           eastWall: 'et'.includes(estCell),
@@ -90,7 +90,7 @@ export class RectMaze extends Maze implements MazeMouseInterface {
   }
 
   carveCurrent() {
-    this.board[this.mouse.location.y][this.mouse.location.x].carved = true;
+    this.board[this.mouse.location.y][this.mouse.location.x].explored = true;
   }
 
   // --------------------------------------------------------------------------

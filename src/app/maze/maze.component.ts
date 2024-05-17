@@ -4,7 +4,7 @@ import {AbsDirection, Cell, RelativeDirection} from "../../logic/maze.model";
 import {ContestMazesEst} from "../../logic/contest-mazes.est";
 import {RectMaze} from "../../logic/rect-maze";
 import {Rect} from "./maze.component.model";
-import {FloodfillMouse} from "../../logic/floodfill-mouse";
+import {NaiveMouse} from "../../logic/naive-mouse";
 import {Selection} from "d3-selection";
 import {BaseType} from "d3";
 
@@ -18,7 +18,7 @@ import {BaseType} from "d3";
 export class MazeComponent implements OnInit {
 
   maze!: RectMaze;
-  mouse!: FloodfillMouse;
+  mouse!: NaiveMouse;
 
   svg!: Selection<BaseType, unknown, HTMLElement, any>;
   mouseSvg: any;
@@ -29,8 +29,8 @@ export class MazeComponent implements OnInit {
   gap: number = 0;
   padding: number = 4;
   wallWidth: number = 2;
-  carvedFill: string = "#efefef";
-  uncarvedFill: string = "#bbb";
+  exploredFill: string = "#efefef";
+  unexploredFill: string = "#bbb";
 
   constructor(
     private ref: ChangeDetectorRef,
@@ -42,7 +42,7 @@ export class MazeComponent implements OnInit {
     this.maze = new RectMaze();
     this.maze.load(ContestMazesEst.london1992);
 
-    this.mouse = new FloodfillMouse(this.maze);
+    this.mouse = new NaiveMouse(this.maze);
   }
 
   ngOnInit() {
@@ -80,7 +80,7 @@ export class MazeComponent implements OnInit {
           .attr("stroke-width", `${this.wallWidth}px`)
       )
       .attr("stroke-dasharray", (d: Cell) => this.calcDashArray(d))
-      .attr("fill", (d: Cell) => d.carved ? this.carvedFill : this.uncarvedFill)
+      .attr("fill", (d: Cell) => d.explored ? this.exploredFill : this.unexploredFill)
     ;
 
     const cheeseCoords = this.calcCellCoords(this.maze.getWinLocation());
