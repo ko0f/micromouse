@@ -47,7 +47,7 @@ export class MazeComponent
     this.maze = new RectMaze(this);
     this.maze.load(ContestMazesEst.london1992);
 
-    this.mouse = new NaiveMouse(this.maze, MouseSpeed.Medium);
+    this.mouse = new NaiveMouse(this.maze, MouseSpeed.Fast);
   }
 
   ngOnInit() {

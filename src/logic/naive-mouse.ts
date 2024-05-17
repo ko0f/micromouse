@@ -25,6 +25,8 @@ export class NaiveMouse extends Mouse {
   direction!: AbsDirection;
   totalCells: number = 0;
   exploredCells: number = 0;
+  backtrackCount: number = 0;
+  createNewJunction: boolean = false;
 
   // exploration state
   state: MouseState = MouseState.Placed;
@@ -234,6 +236,10 @@ export class NaiveMouse extends Mouse {
     }
     // record backtrack instructions
     if (this.state == MouseState.Exploring && this.junctions.length) {
+      if (this.createNewJunction) {
+        this.createNewJunction = false;
+        this.junctions.push([]);
+      }
       const junction = this.junctions[this.junctions.length-1];
       if (!junction.length) {
         junction.push({steps: cells, dir: this.direction});
@@ -250,13 +256,15 @@ export class NaiveMouse extends Mouse {
 
     // record backtrack instructions, don't record first turn
     if (this.state == MouseState.Exploring && this.junctions.length) {
+      this.createNewJunction = false;
       const junction = this.junctions[this.junctions.length-1];
       junction.push({dir: this.direction, steps: 0});
     }
   }
 
   async backtrack() {
-    console.log(`Mouse: Backtracking`);
+    this.backtrackCount++;
+    console.log(`Mouse: Backtracking #${this.backtrackCount}`);
     let instructions = this.junctions.pop();
     if (!instructions)
       throw `Reached a dead end!`;
@@ -271,8 +279,8 @@ export class NaiveMouse extends Mouse {
       this.turn(absDir);
       this.moveForward(inst.steps);
     }
-
-    this.state = MouseState.Exploring;
     console.log(`Mouse: Exploring`);
+    this.state = MouseState.Exploring;
+    this.createNewJunction = true;
   }
 }
