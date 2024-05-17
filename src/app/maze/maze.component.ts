@@ -1,12 +1,13 @@
 import {ChangeDetectorRef, Component, OnInit} from '@angular/core';
 import * as d3 from 'd3';
-import {AbsDirection, Cell, RelativeDirection} from "../../logic/maze.model";
+import {BaseType} from 'd3';
+import {AbsDirection, Cell, MazeUiDelegate, RelativeDirection} from "../../logic/maze.model";
 import {ContestMazesEst} from "../../logic/contest-mazes.est";
 import {RectMaze} from "../../logic/rect-maze";
 import {Rect} from "./maze.component.model";
 import {NaiveMouse} from "../../logic/naive-mouse";
 import {Selection} from "d3-selection";
-import {BaseType} from "d3";
+import {MouseSpeed} from "../../logic/mouse.model";
 
 @Component({
   selector: 'app-maze',
@@ -15,7 +16,11 @@ import {BaseType} from "d3";
   templateUrl: './maze.component.html',
   styleUrl: './maze.component.less'
 })
-export class MazeComponent implements OnInit {
+export class MazeComponent
+  implements
+    OnInit,
+    MazeUiDelegate
+{
 
   maze!: RectMaze;
   mouse!: NaiveMouse;
@@ -39,16 +44,16 @@ export class MazeComponent implements OnInit {
   }
 
   reset() {
-    this.maze = new RectMaze();
-    this.maze.load(ContestMazesEst.london1992);
+    this.maze = new RectMaze(this);
+    this.maze.load(ContestMazesEst.apec1993);
 
-    this.mouse = new NaiveMouse(this.maze);
+    this.mouse = new NaiveMouse(this.maze, MouseSpeed.Fast);
   }
 
   ngOnInit() {
     this.svg = d3.select("svg")
-      .attr("width", this.maze.width * (this.brickSize + this.gap) + this.padding * 2 - this.gap)
-      .attr("height", this.maze.height * (this.brickSize + this.gap) + this.padding * 2 - this.gap);
+      .attr("width", this.maze.getWidth() * (this.brickSize + this.gap) + this.padding * 2 - this.gap)
+      .attr("height", this.maze.getHeight() * (this.brickSize + this.gap) + this.padding * 2 - this.gap);
 
     this.cheeseSvg = this.svg.append("text")
       .attr('class', 'cheese')
@@ -110,8 +115,8 @@ export class MazeComponent implements OnInit {
   calcDashArray(cell: Cell): string {
     return '' +
       (!cell.y ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
-      (cell.eastWall || cell.x == this.maze.width-1 ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
-      (cell.southWall || cell.y == this.maze.height-1 ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
+      (cell.eastWall || cell.x == this.maze.getWidth()-1 ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
+      (cell.southWall || cell.y == this.maze.getHeight()-1 ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
       (!cell.x ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `)
       ;
   }
@@ -172,7 +177,7 @@ export class MazeComponent implements OnInit {
   }
 
   onSolveClick() {
-    this.mouse.solve();
+    this.mouse.solve().then();
   }
 
   onResetClick() {
@@ -180,5 +185,13 @@ export class MazeComponent implements OnInit {
     this.ref.detectChanges();
     this.draw();
     document.getElementById('maze')?.focus();
+  }
+
+  // -----------------------------------------------------------------------------------------
+  //   MazeUiDelegate
+
+  onMouseMoved() {
+    this.ref.detectChanges();
+    this.draw();
   }
 }

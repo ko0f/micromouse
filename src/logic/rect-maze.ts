@@ -1,10 +1,21 @@
 import {Maze} from "./maze";
-import {AbsDirection, Cell, Coords, EstMaze, MazeBoard, MazeMouseInterface, RelativeDirection} from "./maze.model";
+import {
+  AbsDirection,
+  Cell,
+  Coords,
+  EstMaze,
+  MazeBoard,
+  MazeMouseInterface,
+  MazeUiDelegate,
+  RelativeDirection
+} from "./maze.model";
 
 export class RectMaze extends Maze implements MazeMouseInterface {
-  private board: MazeBoard = [];
-  private win: Coords = {x: 0, y: 0};
-  private mouse: {
+  protected width: number = 16;
+  protected height: number = 16;
+  protected board: MazeBoard = [];
+  protected win: Coords = {x: 0, y: 0};
+  protected mouse: {
     location: Coords;
     direction: AbsDirection;
   } = {
@@ -13,26 +24,9 @@ export class RectMaze extends Maze implements MazeMouseInterface {
   };
 
   constructor(
-    public width: number = 16,
-    public height: number = 16,
+    uiDelegate?: MazeUiDelegate,
   ) {
-    super();
-  }
-
-  getBoard(): MazeBoard {
-    return this.board;
-  }
-
-  getMouseDirection(): AbsDirection {
-    return this.mouse.direction;
-  }
-
-  getMouseLocation(): Coords {
-    return this.mouse.location;
-  }
-
-  getWinLocation(): Coords {
-    return this.win;
+    super(uiDelegate);
   }
 
   override randomize() {
@@ -94,6 +88,33 @@ export class RectMaze extends Maze implements MazeMouseInterface {
   }
 
   // --------------------------------------------------------------------------
+  //   UI Interface
+
+  getBoard(): MazeBoard {
+    return this.board;
+  }
+
+  getMouseDirection(): AbsDirection {
+    return this.mouse.direction;
+  }
+
+  getMouseLocation(): Coords {
+    return this.mouse.location;
+  }
+
+  getWinLocation(): Coords {
+    return this.win;
+  }
+
+  getWidth() {
+    return this.width;
+  }
+
+  getHeight() {
+    return this.height;
+  }
+
+  // --------------------------------------------------------------------------
   //   Mouse Interface
 
   hasWall(relativeDir: RelativeDirection): boolean {
@@ -112,6 +133,10 @@ export class RectMaze extends Maze implements MazeMouseInterface {
 
   hasReachedGoal(): boolean {
     return this.mouse.location.x == this.win.x && this.mouse.location.y == this.win.y;
+  }
+
+  getSize(): { width: number; height: number } {
+    return {width: this.width, height: this.height};
   }
 
   moveForward(cells: number): boolean {
@@ -139,10 +164,12 @@ export class RectMaze extends Maze implements MazeMouseInterface {
         break;
     }
     this.carveCurrent();
+    this.uiDelegate?.onMouseMoved();
     return true;
   }
 
   turn(relativeDir: RelativeDirection): void {
     this.mouse.direction = (this.mouse.direction + relativeDir) % 4;
+    this.uiDelegate?.onMouseMoved();
   }
 }

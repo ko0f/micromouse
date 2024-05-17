@@ -9,6 +9,10 @@ export class Mouse {
   ) {
   }
 
+  async dwell() {
+    return new Promise(resolve => setTimeout(resolve, this.speed));
+  }
+
   solve() {
     throw new Error(`Not implemented`);
   }
