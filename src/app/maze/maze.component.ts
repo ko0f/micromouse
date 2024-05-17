@@ -1,8 +1,7 @@
-import {ChangeDetectorRef, Component, OnInit} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import * as d3 from 'd3';
 import {BaseType} from 'd3';
-import {AbsDirection, Cell, MazeUiDelegate, RelativeDirection} from "../../logic/maze.model";
-import {ContestMazesEst} from "../../logic/contest-mazes.est";
+import {AbsDirection, Cell, Coords, MazeUiDelegate, RelativeDirection} from "../../logic/maze.model";
 import {RectMaze} from "../../logic/rect-maze";
 import {Rect} from "./maze.component.model";
 import {NaiveMouse} from "../../logic/naive-mouse";
@@ -54,17 +53,17 @@ export class MazeComponent
   mouseSpeed: MouseSpeed = MouseSpeed.Medium;
 
   constructor(
-    private httpClient: HttpClient
+    httpClient: HttpClient
   ) {
     this.mazeStore = new MazeDB(httpClient);
     this.mazeNames = Object.keys(this.mazeStore.files);
-    this.mazeName = this.mazeNames[0];
+    this.mazeName = localStorage.getItem('mazeName') || this.mazeNames[0];
     this.reset().then();
   }
 
   async reset() {
     this.maze = new RectMaze(this);
-    const textMaze = await this.mazeStore.loadTextMaze(this.mazeName);
+    const textMaze = await this.mazeStore.loadTextMaze(this.mazeName); // loads with a request
     this.maze.load(textMaze);
     this.mouse = new NaiveMouse(this.maze, this.mouseSpeed);
     this.draw();
@@ -146,11 +145,11 @@ export class MazeComponent
 
   /**
    * Calculates x,y rect coordinates of a given maze cell.
-   * @param cell
+   * @param cellCoords
    */
-  calcCellCoords(cell: Cell): Rect {
-    const y1 = cell.y * (this.brickSize + this.gap) + this.padding;
-    const x1 = cell.x * (this.brickSize + this.gap) + this.padding;
+  calcCellCoords(cellCoords: Coords): Rect {
+    const y1 = cellCoords.y * (this.brickSize + this.gap) + this.padding;
+    const x1 = cellCoords.x * (this.brickSize + this.gap) + this.padding;
     const y2 = y1 + this.brickSize;
     const x2 = x1 + this.brickSize;
     return {
@@ -216,6 +215,7 @@ export class MazeComponent
 
   onMazeSelected(event: Event) {
     this.mazeName = (event.target as HTMLSelectElement).value;
+    localStorage.setItem('mazeName', this.mazeName);
     this.reset()
       .then(() => this.draw());
   }

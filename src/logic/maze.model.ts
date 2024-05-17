@@ -5,10 +5,10 @@ export interface MazeUiDelegate {
 }
 
 export interface CellWalls {
-  northWall?: boolean;
-  southWall?: boolean;
-  westWall?: boolean;
-  eastWall?: boolean;
+  northWall: number;
+  southWall: number;
+  westWall: number;
+  eastWall: number;
 }
 
 export interface Cell extends CellWalls {

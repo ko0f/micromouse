@@ -36,7 +36,7 @@ export class RectMaze extends Maze implements MazeMouseInterface {
       const row: Cell[] = [];
       this.board.push(row);
       for (let x = 0; x < this.width; x++) {
-        row.push({x, y, northWall: true, southWall: true, eastWall: true, westWall: true});
+        row.push({x, y, northWall: 1, southWall: 1, eastWall: 1, westWall: 1});
       }
     }
     // carv maze
@@ -73,10 +73,10 @@ export class RectMaze extends Maze implements MazeMouseInterface {
         const estCell = estRow[x]; // b/i/r
         row.push({
           x, y, explored: false,
-          northWall: y == 0 || this.board[y-1][x].southWall,
-          southWall: 'st'.includes(estCell),
-          eastWall: 'et'.includes(estCell),
-          westWall: x == 0 || this.board[y][x-1].eastWall
+          northWall: (y == 0 || this.board[y-1][x].southWall) ? 1 : 0,
+          southWall: 'st'.includes(estCell) ? 1 : 0,
+          eastWall:  'et'.includes(estCell) ? 1 : 0,
+          westWall:  (x == 0 || this.board[y][x-1].eastWall) ? 1 : 0
         });
       }
     }
@@ -102,10 +102,10 @@ export class RectMaze extends Maze implements MazeMouseInterface {
           x: xx,
           y: yy,
           explored: false,
-          northWall: lines[y-1][x] == '-',
-          southWall: lines[y+1][x] == '-',
-          westWall: lines[y][x-2] == '|',
-          eastWall: lines[y][x+2] == '|',
+          northWall: lines[y-1][x] == '-' ? 1 : 0,
+          southWall: lines[y+1][x] == '-' ? 1 : 0,
+          westWall:  lines[y][x-2] == '|' ? 1 : 0,
+          eastWall:  lines[y][x+2] == '|' ? 1 : 0,
         };
         row.push(cell);
 
@@ -167,13 +167,13 @@ export class RectMaze extends Maze implements MazeMouseInterface {
     let checkDir: AbsDirection = (this.mouse.direction + relativeDir) % 4;
     switch (checkDir) {
       case AbsDirection.north:
-        return this.board[this.mouse.location.y][this.mouse.location.x].northWall!;
+        return !!this.board[this.mouse.location.y][this.mouse.location.x].northWall;
       case AbsDirection.south:
-        return this.board[this.mouse.location.y][this.mouse.location.x].southWall!;
+        return !!this.board[this.mouse.location.y][this.mouse.location.x].southWall;
       case AbsDirection.east:
-        return this.board[this.mouse.location.y][this.mouse.location.x].eastWall!;
+        return !!this.board[this.mouse.location.y][this.mouse.location.x].eastWall;
       case AbsDirection.west:
-        return this.board[this.mouse.location.y][this.mouse.location.x].westWall!;
+        return !!this.board[this.mouse.location.y][this.mouse.location.x].westWall;
     }
   }
 

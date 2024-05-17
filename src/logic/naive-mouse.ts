@@ -124,10 +124,10 @@ export class NaiveMouse extends Mouse {
       for (let x = 0; x < size.width * 2 + 1; x++) {
         row.push({
           x, y, explored: false,
-          northWall: false,
-          southWall: false,
-          eastWall: false,
-          westWall: false,
+          northWall: 0,
+          southWall: 0,
+          eastWall: 0,
+          westWall: 0,
         });
       }
     }
@@ -138,22 +138,45 @@ export class NaiveMouse extends Mouse {
     if (!cell.explored) {
       this.exploredCells += 1;
       cell.explored = true;
-      cell.northWall = this.maze.hasWall((AbsDirection.north - this.direction + 4) % 4);
-      cell.eastWall = this.maze.hasWall((AbsDirection.east - this.direction + 4) % 4);
-      cell.southWall = this.maze.hasWall((AbsDirection.south - this.direction + 4) % 4);
-      cell.westWall = this.maze.hasWall((AbsDirection.west - this.direction + 4) % 4);
+      cell.northWall = this.maze.hasWall((AbsDirection.north - this.direction + 4) % 4) ? 1 : 0;
+      cell.eastWall =  this.maze.hasWall((AbsDirection.east - this.direction + 4) % 4)  ? 1 : 0;
+      cell.southWall = this.maze.hasWall((AbsDirection.south - this.direction + 4) % 4) ? 1 : 0;
+      cell.westWall =  this.maze.hasWall((AbsDirection.west - this.direction + 4) % 4)  ? 1 : 0;
 
       // update walls of adjacent cells
-      if (cell.northWall)
-        this.getAbsCell(AbsDirection.north).southWall = true;
-      if (cell.southWall)
-        this.getAbsCell(AbsDirection.south).northWall = true;
-      if (cell.eastWall)
-        this.getAbsCell(AbsDirection.east).westWall = true;
-      if (cell.westWall)
-        this.getAbsCell(AbsDirection.west).eastWall = true;
+      if (cell.northWall) {
+        const _cell = this.getAbsCell(AbsDirection.north);
+        _cell.southWall = 1;
+        this.checkCellIndirectKnowledge(_cell);
+      }
+      if (cell.southWall) {
+        const _cell = this.getAbsCell(AbsDirection.south);
+        _cell.northWall = 1;
+        this.checkCellIndirectKnowledge(_cell);
+      }
+      if (cell.eastWall) {
+        const _cell = this.getAbsCell(AbsDirection.east);
+        _cell.westWall = 1;
+        this.checkCellIndirectKnowledge(_cell);
+      }
+      if (cell.westWall) {
+        const _cell = this.getAbsCell(AbsDirection.west);
+        _cell.eastWall = 1;
+        this.checkCellIndirectKnowledge(_cell);
+      }
     }
     return cell;
+  }
+
+  /**
+   * Skips cells we can conclude are a dead-end
+   * @param cell
+   */
+  checkCellIndirectKnowledge(cell: Cell) {
+    if (!cell.explored && cell.northWall + cell.southWall + cell.eastWall + cell.westWall >= 3) {
+      cell.explored = true;
+      this.exploredCells += 1;
+    }
   }
 
   convertToRelativeCell(cell: Cell): RelativeCell {
