@@ -3,8 +3,10 @@ import * as d3 from 'd3';
 import {AbsDirection, Cell, RelativeDirection} from "../../logic/maze.model";
 import {ContestMazesEst} from "../../logic/contest-mazes.est";
 import {RectMaze} from "../../logic/rect-maze";
-import {CellRect} from "./maze.component.model";
+import {Rect} from "./maze.component.model";
 import {FloodfillMouse} from "../../logic/floodfill-mouse";
+import {Selection} from "d3-selection";
+import {BaseType} from "d3";
 
 @Component({
   selector: 'app-maze',
@@ -18,8 +20,9 @@ export class MazeComponent implements OnInit {
   maze!: RectMaze;
   mouse!: FloodfillMouse;
 
-  svg: any = null;
-  mouseSvg: any = null;
+  svg!: Selection<BaseType, unknown, HTMLElement, any>;
+  mouseSvg: any;
+  cheeseSvg: any;
 
   brickSize: number = 25;
   mouseSize: number = 20;
@@ -27,7 +30,7 @@ export class MazeComponent implements OnInit {
   padding: number = 4;
   wallWidth: number = 2;
   carvedFill: string = "#efefef";
-  uncarvedFill: string = "#333";
+  uncarvedFill: string = "#bbb";
 
   constructor(
     private ref: ChangeDetectorRef,
@@ -43,53 +46,68 @@ export class MazeComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.svg = d3.select("#maze")
+    this.svg = d3.select("svg")
       .attr("width", this.maze.width * (this.brickSize + this.gap) + this.padding * 2 - this.gap)
       .attr("height", this.maze.height * (this.brickSize + this.gap) + this.padding * 2 - this.gap);
-    this.draw();
+
+    this.cheeseSvg = this.svg.append("text")
+      .attr('class', 'cheese')
+      .text('🧀')
+      .attr('style', 'text-shadow: 1px 1px #B88700');
 
     this.mouseSvg = this.svg.append("image")
+      .attr('class', 'mouse')
       .attr('xlink:href', '/assets/mouse.png');
-    this.drawMouse();
+
+    this.draw();
   }
 
   draw() {
-    let row = this.svg.selectAll(".row")
+    let row = this.svg.selectAll("g")
       .data(this.maze.getBoard())
-      .enter().append("g")
-      .attr("class", "row");
+      .join("g");
 
-    let column = row.selectAll(".square")
-      .data(function(d: any) { return d; })
-      .enter().append("rect")
-      .attr("class", "square")
-      .attr("x", (d: Cell) => { return d.x * (this.brickSize + this.gap) + this.padding; })
-      .attr("y", (d: Cell) => { return d.y * (this.brickSize + this.gap) + this.padding; })
-      .attr("width", this.brickSize)
-      .attr("height", this.brickSize)
+    row.selectAll("rect")
+      .data(d => d)
+      .join(
+        enter => enter.append("rect")
+          .attr("class", "cell")
+          .attr("x", (d: Cell) => { return d.x * (this.brickSize + this.gap) + this.padding; })
+          .attr("y", (d: Cell) => { return d.y * (this.brickSize + this.gap) + this.padding; })
+          .attr("width", this.brickSize)
+          .attr("height", this.brickSize)
+          .attr("stroke", `#222`)
+          .attr("stroke-width", `${this.wallWidth}px`)
+      )
+      .attr("stroke-dasharray", (d: Cell) => this.calcDashArray(d))
       .attr("fill", (d: Cell) => d.carved ? this.carvedFill : this.uncarvedFill)
-      .attr("stroke", `#222`)
-      .attr("stroke-width", `${this.wallWidth}px`)
-      .attr("stroke-dasharray", (d: Cell) => this.dashArray(d))
-
     ;
-  }
 
-  drawMouse() {
-    const mouseCoords = this.cellCoords(this.maze.getMouseLocation());
+    const cheeseCoords = this.calcCellCoords(this.maze.getWinLocation());
+    this.cheeseSvg
+      .attr("dy", `${this.brickSize/2}px`)
+      .attr('x', cheeseCoords.xCenter - this.brickSize/4)
+      .attr('y', cheeseCoords.yCenter - this.brickSize/4)
+      .raise();
+
+    const mouseCoords = this.calcCellCoords(this.maze.getMouseLocation());
     this.mouseSvg
       .attr('x', mouseCoords.xCenter - this.mouseSize/2)
       .attr('y', mouseCoords.yCenter - this.mouseSize/2)
       .attr('width', this.mouseSize)
       .attr('height', this.mouseSize)
-      .style("transform", `rotate(${this.mouseRotation()}deg)`)
+      .style("transform", `rotate(${this.getMouseAngle()}deg)`)
       .style("transform-origin", `center`)
       .style("transform-box", `content-box`)
-    ;
+      .raise();
     ;
   }
 
-  dashArray(cell: Cell): string {
+  /**
+   * Designs a style string for stroke-dasharray, we're using it to draw walls.
+   * @param cell
+   */
+  calcDashArray(cell: Cell): string {
     return '' +
       (!cell.y ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
       (cell.eastWall || cell.x == this.maze.width-1 ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
@@ -98,7 +116,11 @@ export class MazeComponent implements OnInit {
       ;
   }
 
-  cellCoords(cell: Cell): CellRect {
+  /**
+   * Calculates x,y rect coordinates of a given maze cell.
+   * @param cell
+   */
+  calcCellCoords(cell: Cell): Rect {
     const y1 = cell.y * (this.brickSize + this.gap) + this.padding;
     const x1 = cell.x * (this.brickSize + this.gap) + this.padding;
     const y2 = y1 + this.brickSize;
@@ -110,7 +132,7 @@ export class MazeComponent implements OnInit {
     }
   }
 
-  mouseRotation() {
+  getMouseAngle() {
     switch (this.maze.getMouseDirection()) {
       case AbsDirection.north:
         return 0;
@@ -136,14 +158,16 @@ export class MazeComponent implements OnInit {
       changed = true;
     } else if (event.key == 'ArrowUp') {
       const result = this.maze.moveForward(1);
-      if (!result)
-        alert(`You lost!`);
+      // if (!result)
+      //   alert(`You lost!`);
       changed = true;
     }
     if (changed) {
-      this.drawMouse();
+      this.draw();
       event.preventDefault();
     }
+    if (this.maze.hasReachedGoal())
+      alert(`You won!`);
     // console.log(`key: ${event.key}  shift: ${event.shiftKey}  alt: ${event.altKey}`);
   }
 
@@ -155,7 +179,6 @@ export class MazeComponent implements OnInit {
     this.reset();
     this.ref.detectChanges();
     this.draw();
-    this.drawMouse();
     document.getElementById('maze')?.focus();
   }
 }

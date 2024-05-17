@@ -1,4 +1,4 @@
-export interface CellRect {
+export interface Rect {
   y1: number;
   x1: number;
   y2: number;

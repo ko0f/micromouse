@@ -31,6 +31,10 @@ export class RectMaze extends Maze implements MazeMouseInterface {
     return this.mouse.location;
   }
 
+  getWinLocation(): Coords {
+    return this.win;
+  }
+
   override randomize() {
     this.board = [];
     // fill with a clean board
@@ -74,7 +78,7 @@ export class RectMaze extends Maze implements MazeMouseInterface {
       for (let x = 0; x < this.width; x++) {
         const estCell = estRow[x]; // b/i/r
         row.push({
-          x, y, carved: true,
+          x, y, carved: false,
           northWall: y == 0 || this.board[y-1][x].southWall,
           southWall: 'st'.includes(estCell),
           eastWall: 'et'.includes(estCell),
@@ -82,6 +86,11 @@ export class RectMaze extends Maze implements MazeMouseInterface {
         });
       }
     }
+    this.carveCurrent();
+  }
+
+  carveCurrent() {
+    this.board[this.mouse.location.y][this.mouse.location.x].carved = true;
   }
 
   // --------------------------------------------------------------------------
@@ -129,11 +138,11 @@ export class RectMaze extends Maze implements MazeMouseInterface {
         this.mouse.location.x -= cells;
         break;
     }
+    this.carveCurrent();
     return true;
   }
 
   turn(relativeDir: RelativeDirection): void {
     this.mouse.direction = (this.mouse.direction + relativeDir) % 4;
-    console.log(this.mouse.direction);
   }
 }
