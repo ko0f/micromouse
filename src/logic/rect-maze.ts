@@ -54,7 +54,7 @@ export class RectMaze extends Maze implements MazeMouseInterface {
    * e = right wall
    * @param estMaze
    */
-  load(estMaze: EstMaze) {
+  loadEst(estMaze: EstMaze) {
     if (!estMaze?.est?.length)
       throw new Error(`Empty EST string`);
 
@@ -81,6 +81,52 @@ export class RectMaze extends Maze implements MazeMouseInterface {
       }
     }
     this.carveCurrent();
+  }
+
+  load(textMaze: string) {
+    if (!textMaze || !textMaze.length)
+      throw `Empty maze`;
+
+    let lines = textMaze.trim().split('\n');
+
+    this.board = [];
+    this.height = (lines.length - 1) / 2;
+    this.width = (lines[0].length - 1) / 4;
+
+    for (let y = 1, yy = 0; y < lines.length; y += 2, yy++) {
+      let line = lines[y];
+      const row: Cell[] = [];
+      this.board.push(row);
+      for (let x = 2, xx = 0; x < line.length; x += 4, xx++) {
+        const cell: Cell = {
+          x: xx,
+          y: yy,
+          explored: false,
+          northWall: lines[y-1][x] == '-',
+          southWall: lines[y+1][x] == '-',
+          westWall: lines[y][x-2] == '|',
+          eastWall: lines[y][x+2] == '|',
+        };
+        row.push(cell);
+
+        if (line[x] == 'G') {
+          this.win = {x: xx, y: yy};
+        }
+        if (line[x] == 'S') {
+          this.mouse.location = {x: xx, y: yy};
+          if (!cell.northWall)
+            this.mouse.direction = AbsDirection.north;
+          else if (!cell.eastWall)
+            this.mouse.direction = AbsDirection.east;
+          else if (!cell.southWall)
+            this.mouse.direction = AbsDirection.south;
+          else if (!cell.westWall)
+            this.mouse.direction = AbsDirection.west;
+          else
+            throw `Can't detect mouse initial direction`;
+        }
+      }
+    }
   }
 
   carveCurrent() {

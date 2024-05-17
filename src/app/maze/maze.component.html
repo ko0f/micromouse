@@ -4,7 +4,7 @@
   <input type="button" value="Cont." (click)="onContinueClick()"/>
   <input type="button" value="Reset" (click)="onResetMazeClick()"/>
   <select (change)="onMazeSelected($event)">
-    <option *ngFor="let _mazeName of mazeStore" [value]="_mazeName"  [selected]="_mazeName == mazeName">{{_mazeName}}</option>
+    <option *ngFor="let _mazeName of mazeNames" [value]="_mazeName"  [selected]="_mazeName == mazeName">{{_mazeName}}</option>
   </select>
   <select (change)="onSpeedSelected($event)">
     <option *ngFor="let speed of mouseSpeeds" [value]="+speed" [selected]="+speed == mouseSpeed">{{MouseSpeed[+speed]}}</option>

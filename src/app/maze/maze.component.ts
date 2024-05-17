@@ -10,11 +10,13 @@ import {Selection} from "d3-selection";
 import {MouseSpeed} from "../../logic/mouse.model";
 import {Mouse} from "../../logic/mouse";
 import {CommonModule} from "@angular/common";
+import {MazeDB} from "../../logic/maze-db";
+import {HttpClient, HttpClientModule} from "@angular/common/http";
 
 @Component({
   selector: 'app-maze',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, HttpClientModule],
   templateUrl: './maze.component.html',
   styleUrl: './maze.component.less'
 })
@@ -42,22 +44,30 @@ export class MazeComponent
   unexploredFill: string = "#ddd";
 
   // data
-  mazeStore: string[] = Object.keys(ContestMazesEst);
-  mazeName: string = 'london1992';
+  // mazeStore: string[] = Object.keys(ContestMazesEst);
+  mazeStore: MazeDB;
+  mazeNames: string[] = [];
+  mazeName: string = '';
 
   protected readonly MouseSpeed = MouseSpeed;
   mouseSpeeds: string[] = Object.keys(MouseSpeed).filter((e: any) => Number(e) >= 0);
   mouseSpeed: MouseSpeed = MouseSpeed.Medium;
 
-  constructor() {
-    this.reset();
+  constructor(
+    private httpClient: HttpClient
+  ) {
+    this.mazeStore = new MazeDB(httpClient);
+    this.mazeNames = Object.keys(this.mazeStore.files);
+    this.mazeName = this.mazeNames[0];
+    this.reset().then();
   }
 
-  reset() {
+  async reset() {
     this.maze = new RectMaze(this);
-    this.maze.load(ContestMazesEst[this.mazeName]);
-
+    const textMaze = await this.mazeStore.loadTextMaze(this.mazeName);
+    this.maze.load(textMaze);
     this.mouse = new NaiveMouse(this.maze, this.mouseSpeed);
+    this.draw();
   }
 
   ngOnInit() {
@@ -199,20 +209,21 @@ export class MazeComponent
 
   onResetMazeClick() {
     this.mouse.stop();
-    this.reset();
-    this.draw();
+    this.reset()
+      .then(() => this.draw());
+    ;
   }
 
   onMazeSelected(event: Event) {
     this.mazeName = (event.target as HTMLSelectElement).value;
-    this.reset();
-    this.draw();
+    this.reset()
+      .then(() => this.draw());
   }
 
   onSpeedSelected(event: Event) {
     this.mouseSpeed = +(event.target as HTMLSelectElement).value;
-    this.reset();
-    this.draw();
+    this.reset()
+      .then(() => this.draw());
   }
 
   // -----------------------------------------------------------------------------------------
