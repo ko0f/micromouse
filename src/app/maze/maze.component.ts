@@ -8,11 +8,13 @@ import {Rect} from "./maze.component.model";
 import {NaiveMouse} from "../../logic/naive-mouse";
 import {Selection} from "d3-selection";
 import {MouseSpeed} from "../../logic/mouse.model";
+import {Mouse} from "../../logic/mouse";
+import {CommonModule} from "@angular/common";
 
 @Component({
   selector: 'app-maze',
   standalone: true,
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './maze.component.html',
   styleUrl: './maze.component.less'
 })
@@ -21,39 +23,45 @@ export class MazeComponent
     OnInit,
     MazeUiDelegate
 {
-
+  // logic
   maze!: RectMaze;
-  mouse!: NaiveMouse;
+  mouse!: Mouse;
 
+  // svg
   svg!: Selection<BaseType, unknown, HTMLElement, any>;
   mouseSvg: any;
   cheeseSvg: any;
 
+  // design attributes
   brickSize: number = 25;
   mouseSize: number = 20;
   gap: number = 0;
   padding: number = 4;
   wallWidth: number = 2;
   exploredFill: string = "#efefef";
-  unexploredFill: string = "#bbb";
+  unexploredFill: string = "#ddd";
 
-  constructor(
-    private ref: ChangeDetectorRef,
-  ) {
+  // data
+  mazeStore: string[] = Object.keys(ContestMazesEst);
+  mazeName: string = 'london1992';
+
+  protected readonly MouseSpeed = MouseSpeed;
+  mouseSpeeds: string[] = Object.keys(MouseSpeed).filter((e: any) => Number(e) >= 0);
+  mouseSpeed: MouseSpeed = MouseSpeed.Medium;
+
+  constructor() {
     this.reset();
   }
 
   reset() {
     this.maze = new RectMaze(this);
-    this.maze.load(ContestMazesEst.london1992);
+    this.maze.load(ContestMazesEst[this.mazeName]);
 
-    this.mouse = new NaiveMouse(this.maze, MouseSpeed.Fast);
+    this.mouse = new NaiveMouse(this.maze, this.mouseSpeed);
   }
 
   ngOnInit() {
-    this.svg = d3.select("svg")
-      .attr("width", this.maze.getWidth() * (this.brickSize + this.gap) + this.padding * 2 - this.gap)
-      .attr("height", this.maze.getHeight() * (this.brickSize + this.gap) + this.padding * 2 - this.gap);
+    this.svg = d3.select("svg");
 
     this.cheeseSvg = this.svg.append("text")
       .attr('class', 'cheese')
@@ -68,6 +76,10 @@ export class MazeComponent
   }
 
   draw() {
+    this.svg
+      .attr("width", this.maze.getWidth() * (this.brickSize + this.gap) + this.padding * 2 - this.gap)
+      .attr("height", this.maze.getHeight() * (this.brickSize + this.gap) + this.padding * 2 - this.gap);
+
     let row = this.svg.selectAll("g")
       .data(this.maze.getBoard())
       .join("g");
@@ -106,6 +118,7 @@ export class MazeComponent
       .style("transform-box", `content-box`)
       .raise();
     ;
+    document.getElementById('maze')?.focus();
   }
 
   /**
@@ -187,9 +200,19 @@ export class MazeComponent
   onResetMazeClick() {
     this.mouse.stop();
     this.reset();
-    // this.ref.detectChanges();
     this.draw();
-    document.getElementById('maze')?.focus();
+  }
+
+  onMazeSelected(event: Event) {
+    this.mazeName = (event.target as HTMLSelectElement).value;
+    this.reset();
+    this.draw();
+  }
+
+  onSpeedSelected(event: Event) {
+    this.mouseSpeed = +(event.target as HTMLSelectElement).value;
+    this.reset();
+    this.draw();
   }
 
   // -----------------------------------------------------------------------------------------

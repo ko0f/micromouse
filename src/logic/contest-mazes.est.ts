@@ -1,6 +1,6 @@
 import {EstMaze, AbsDirection} from "./maze.model";
 
-export const ContestMazesEst = {
+export const ContestMazesEst: {[name: string]: EstMaze} = {
   apec1993: {
     est: [
       'sss ss s ss ts e',
@@ -23,7 +23,7 @@ export const ContestMazesEst = {
     win: {y: 8, x: 8},
     initialLocation: {y: 15, x: 0},
     initialDirection: AbsDirection.north,
-  } as EstMaze,
+  },
 
   london1992: {
     est: [
@@ -46,5 +46,5 @@ export const ContestMazesEst = {
     win: {y: 7, x: 7},
     initialLocation: {y: 14, x: 0},
     initialDirection: AbsDirection.north,
-  } as EstMaze,
+  },
 }

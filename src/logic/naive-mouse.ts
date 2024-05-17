@@ -1,5 +1,5 @@
 import {Mouse} from "./mouse";
-import {AbsDirection, Cell, Coords, MazeMouseInterface, RelativeDirection} from "./maze.model";
+import {AbsDirection, Cell, Coords, MazeBoard, MazeMouseInterface, RelativeDirection} from "./maze.model";
 import {MouseBacktrackInst, MouseSpeed, MouseState, RelativeCell} from "./mouse.model";
 
 /**
@@ -20,17 +20,18 @@ import {MouseBacktrackInst, MouseSpeed, MouseState, RelativeCell} from "./mouse.
 export class NaiveMouse extends Mouse {
 
   // board state
-  board!: Cell[][];
+  board!: MazeBoard;
   location!: Coords;
   direction!: AbsDirection;
+  // board stats
   totalCells: number = 0;
   exploredCells: number = 0;
   backtrackCount: number = 0;
-  createNewJunction: boolean = false;
 
   // exploration state
   state: MouseState = MouseState.Placed;
   junctions: MouseBacktrackInst[][] = []; // Stack of instructions on how to get to last junction.
+  createNewJunction: boolean = false;
 
   constructor(
     maze: MazeMouseInterface,

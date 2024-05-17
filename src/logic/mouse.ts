@@ -16,7 +16,7 @@ export class Mouse {
     return new Promise(resolve => setTimeout(resolve, this.speed));
   }
 
-  solve() {
+  async solve() {
     throw new Error(`Not implemented`);
   }
 
