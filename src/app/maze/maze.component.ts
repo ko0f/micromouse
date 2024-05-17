@@ -45,9 +45,9 @@ export class MazeComponent
 
   reset() {
     this.maze = new RectMaze(this);
-    this.maze.load(ContestMazesEst.apec1993);
+    this.maze.load(ContestMazesEst.london1992);
 
-    this.mouse = new NaiveMouse(this.maze, MouseSpeed.Fast);
+    this.mouse = new NaiveMouse(this.maze, MouseSpeed.Medium);
   }
 
   ngOnInit() {
@@ -170,9 +170,9 @@ export class MazeComponent
     if (changed) {
       this.draw();
       event.preventDefault();
+      if (this.maze.hasReachedGoal())
+        alert(`You won!`);
     }
-    if (this.maze.hasReachedGoal())
-      alert(`You won!`);
     // console.log(`key: ${event.key}  shift: ${event.shiftKey}  alt: ${event.altKey}`);
   }
 
@@ -180,9 +180,14 @@ export class MazeComponent
     this.mouse.solve().then();
   }
 
-  onResetClick() {
+  onContinueClick() {
+    this.mouse.continue().then();
+  }
+
+  onResetMazeClick() {
+    this.mouse.stop();
     this.reset();
-    this.ref.detectChanges();
+    // this.ref.detectChanges();
     this.draw();
     document.getElementById('maze')?.focus();
   }
@@ -191,7 +196,7 @@ export class MazeComponent
   //   MazeUiDelegate
 
   onMouseMoved() {
-    this.ref.detectChanges();
+    // this.ref.detectChanges();
     this.draw();
   }
 }

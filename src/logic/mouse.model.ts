@@ -1,10 +1,10 @@
-import {RelativeDirection} from "./maze.model";
+import {AbsDirection, RelativeDirection} from "./maze.model";
 
 export enum MouseSpeed {
   Insta,
-  Fast = 100,
-  Medium = 500,
-  Slow = 1000,
+  Fast = 10,
+  Medium = 100,
+  Slow = 500,
 }
 
 export enum MouseState {
@@ -23,6 +23,6 @@ export interface RelativeCell {
 }
 
 export interface MouseBacktrackInst {
-  moveForward?: number;
-  turn?: RelativeDirection;
+  steps: number;
+  dir: AbsDirection;
 }

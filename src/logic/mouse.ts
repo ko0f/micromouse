@@ -3,6 +3,9 @@ import {MouseSpeed} from "./mouse.model";
 
 export class Mouse {
 
+  protected _stop: boolean = false
+  protected solved: boolean = false;
+
   constructor(
     public maze: MazeMouseInterface,
     public speed: MouseSpeed = MouseSpeed.Fast,
@@ -15,5 +18,13 @@ export class Mouse {
 
   solve() {
     throw new Error(`Not implemented`);
+  }
+
+  async continue() {
+    throw new Error(`Not implemented`);
+  }
+
+  stop() {
+    this._stop = true;
   }
 }

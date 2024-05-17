@@ -1,6 +1,6 @@
 import {Mouse} from "./mouse";
-import {AbsDirection, Cell, Coords, RelativeDirection} from "./maze.model";
-import {MouseBacktrackInst, MouseState, RelativeCell} from "./mouse.model";
+import {AbsDirection, Cell, Coords, MazeMouseInterface, RelativeDirection} from "./maze.model";
+import {MouseBacktrackInst, MouseSpeed, MouseState, RelativeCell} from "./mouse.model";
 
 /**
  * Simple mouse in rect maze solver.
@@ -19,28 +19,50 @@ import {MouseBacktrackInst, MouseState, RelativeCell} from "./mouse.model";
  */
 export class NaiveMouse extends Mouse {
 
+  // board state
   board!: Cell[][];
   location!: Coords;
   direction!: AbsDirection;
+  totalCells: number = 0;
+  exploredCells: number = 0;
 
-  // Stack of instructions on how to get to last junction.
-  junctions: MouseBacktrackInst[][] = [];
+  // exploration state
   state: MouseState = MouseState.Placed;
+  junctions: MouseBacktrackInst[][] = []; // Stack of instructions on how to get to last junction.
+
+  constructor(
+    maze: MazeMouseInterface,
+    speed: MouseSpeed = MouseSpeed.Fast,
+  ) {
+    super(maze, speed);
+    this.initBoard();
+  }
 
   override async solve() {
-    this.initBoard();
     await this.explore();
     if (this.state == MouseState.Stuck)
       console.log(`Mouse: Stuck!`);
-    else
+    else if (this.state == MouseState.Solved)
       console.log(`Mouse: Solved!`);
+  }
+
+  override async continue() {
+    await this.explore();
+    if (this.state == MouseState.Stuck)
+      console.log(`Mouse: Stuck!`);
+  }
+
+  shouldKeepExploring() {
+    return this.solved ?
+      this.exploredCells < this.totalCells :
+      !this.maze.hasReachedGoal();
   }
 
   async explore() {
     this.state = MouseState.Exploring;
 
     try {
-      while (!this.maze.hasReachedGoal()) {
+      while (this.shouldKeepExploring() && !this._stop) {
         await this.dwell();
         const cell = this.inspectCurrentCell();
         const relCell = this.convertToRelativeCell(cell);
@@ -66,34 +88,24 @@ export class NaiveMouse extends Mouse {
           this.moveForward(1);
         }
         else {
-          // already explored or dead end - backtrack
-          console.log(`Mouse: Backtracking`);
-          let instructions = this.junctions.pop();
-          if (!instructions)
-            throw `Reached a dead end!`;
-          this.state = MouseState.Backtracking;
-          this.turn(RelativeDirection.back);
-          let inst;
-          while (inst = instructions.pop()) {
-            await this.dwell();
-            if (inst.turn != undefined) {
-              this.turn(inst.turn);
-            } else {
-              this.moveForward(inst.moveForward!);
-            }
-          }
-          this.state = MouseState.Exploring;
-          console.log(`Mouse: Exploring`);
+          // already explored or dead end
+          await this.backtrack();
         }
       }
     } catch (e) {
       this.state = MouseState.Stuck;
       console.error(e);
     }
+    if (this.maze.hasReachedGoal()) {
+      this.state = MouseState.Solved;
+      this.solved = true;
+    }
   }
 
   initBoard() {
     const size = this.maze.getSize();
+    this.totalCells = size.height * size.width;
+    this.exploredCells = 0;
 
     // middle of the memory maze
     this.location = {
@@ -121,6 +133,7 @@ export class NaiveMouse extends Mouse {
   inspectCurrentCell(): Cell {
     const cell = this.board[this.location.y][this.location.x];
     if (!cell.explored) {
+      this.exploredCells += 1;
       cell.explored = true;
       cell.northWall = this.maze.hasWall((AbsDirection.north - this.direction + 4) % 4);
       cell.eastWall = this.maze.hasWall((AbsDirection.east - this.direction + 4) % 4);
@@ -222,10 +235,10 @@ export class NaiveMouse extends Mouse {
     // record backtrack instructions
     if (this.state == MouseState.Exploring && this.junctions.length) {
       const junction = this.junctions[this.junctions.length-1];
-      if (!junction.length || junction[junction.length-1].turn != undefined) {
-        junction.push({moveForward: cells});
+      if (!junction.length) {
+        junction.push({steps: cells, dir: this.direction});
       } else {
-        junction[junction.length-1].moveForward = junction[junction.length-1].moveForward! + cells;
+        junction[junction.length-1].steps += cells;
       }
     }
   }
@@ -238,9 +251,28 @@ export class NaiveMouse extends Mouse {
     // record backtrack instructions, don't record first turn
     if (this.state == MouseState.Exploring && this.junctions.length) {
       const junction = this.junctions[this.junctions.length-1];
-      if (junction.length) // ignore turn if it's the first one
-        junction.push({turn: (relativeDir + 2) % 4}); // turn the other way on the way back
+      junction.push({dir: this.direction, steps: 0});
     }
   }
 
+  async backtrack() {
+    console.log(`Mouse: Backtracking`);
+    let instructions = this.junctions.pop();
+    if (!instructions)
+      throw `Reached a dead end!`;
+
+    this.state = MouseState.Backtracking;
+    this.turn(RelativeDirection.back);
+
+    let inst;
+    while (inst = instructions.pop()) {
+      await this.dwell();
+      const absDir = (inst.dir - this.direction + 6) % 4;
+      this.turn(absDir);
+      this.moveForward(inst.steps);
+    }
+
+    this.state = MouseState.Exploring;
+    console.log(`Mouse: Exploring`);
+  }
 }
