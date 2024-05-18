@@ -1,7 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import * as d3 from 'd3';
 import {BaseType} from 'd3';
-import {AbsDirection, Cell, Coords, MazeUiDelegate, RelativeDirection} from "../../logic/maze.model";
+import {AbsDirection, Cell, Coords, MazeUiDelegate} from "../../logic/maze.model";
 import {RectMaze} from "../../logic/rect-maze";
 import {Rect} from "./maze.component.model";
 import {NaiveMouse} from "../../logic/naive-mouse";
@@ -58,6 +58,7 @@ export class MazeComponent
     this.mazeStore = new MazeDB(httpClient);
     this.mazeNames = Object.keys(this.mazeStore.files);
     this.mazeName = localStorage.getItem('mazeName') || this.mazeNames[0];
+    this.mouseSpeed = parseInt(localStorage.getItem('mouseSpeed') || '0') || MouseSpeed.Medium;
     this.reset().then();
   }
 
@@ -175,18 +176,20 @@ export class MazeComponent
   onKeyDown(event: KeyboardEvent) {
     let changed = false;
     if (event.key == 'ArrowRight') {
-      this.maze.turn(RelativeDirection.right);
+      this.maze.turn((AbsDirection.east - this.maze.getMouseDirection() + 4) % 4);
+      this.maze.moveForward(1);
       changed = true;
     } else if (event.key == 'ArrowLeft') {
-      this.maze.turn(RelativeDirection.left);
+      this.maze.turn((AbsDirection.west - this.maze.getMouseDirection() + 4) % 4);
+      this.maze.moveForward(1);
       changed = true;
     } else if (event.key == 'ArrowDown') {
-      this.maze.turn(RelativeDirection.back);
+      this.maze.turn((AbsDirection.south - this.maze.getMouseDirection() + 4) % 4);
+      this.maze.moveForward(1);
       changed = true;
     } else if (event.key == 'ArrowUp') {
-      const result = this.maze.moveForward(1);
-      // if (!result)
-      //   alert(`You lost!`);
+      this.maze.turn((AbsDirection.north - this.maze.getMouseDirection() + 4) % 4);
+      this.maze.moveForward(1);
       changed = true;
     }
     if (changed) {
@@ -222,8 +225,13 @@ export class MazeComponent
 
   onSpeedSelected(event: Event) {
     this.mouseSpeed = +(event.target as HTMLSelectElement).value;
+    localStorage.setItem('mouseSpeed', ''+this.mouseSpeed);
     this.reset()
       .then(() => this.draw());
+  }
+
+  onStopMouseClick() {
+    this.mouse.stop();
   }
 
   // -----------------------------------------------------------------------------------------

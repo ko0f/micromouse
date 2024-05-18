@@ -33,33 +33,41 @@ export class NaiveMouse extends Mouse {
   junctions: MouseBacktrackInst[][] = []; // Stack of instructions on how to get to last junction.
   createNewJunction: boolean = false;
 
+  // config
+  autoContinue: boolean = true;
+
   constructor(
     maze: MazeMouseInterface,
     speed: MouseSpeed = MouseSpeed.Fast,
   ) {
     super(maze, speed);
-    this.initBoard();
+    this.initMemoryBoard();
   }
 
   override async solve() {
     await this.explore();
     if (this.state == MouseState.Stuck)
       console.log(`Mouse: Stuck!`);
-    else if (this.state == MouseState.Solved)
+    else if (this.state == MouseState.Solved) {
       console.log(`Mouse: Solved!`);
+      if (this.autoContinue) {
+        await this.dwell(1000);
+        await this.continue();
+      }
+    }
   }
 
   override async continue() {
     await this.explore();
     if (this.state == MouseState.Stuck)
       console.log(`Mouse: Stuck!`);
+    else
+      this.state = MouseState.Finished;
   }
 
-  shouldKeepExploring() {
-    return this.solved ?
-      this.exploredCells < this.totalCells :
-      !this.maze.hasReachedGoal();
-  }
+
+  // ============================================================================================
+  //   Exploration
 
   async explore() {
     this.state = MouseState.Exploring;
@@ -105,7 +113,7 @@ export class NaiveMouse extends Mouse {
     }
   }
 
-  initBoard() {
+  initMemoryBoard() {
     const size = this.maze.getSize();
     this.totalCells = size.height * size.width;
     this.exploredCells = 0;
@@ -168,6 +176,12 @@ export class NaiveMouse extends Mouse {
     return cell;
   }
 
+  shouldKeepExploring() {
+    return this.solved ?
+      this.exploredCells < this.totalCells :
+      !this.maze.hasReachedGoal();
+  }
+
   /**
    * Skips cells we can conclude are a dead-end
    * @param cell
@@ -176,65 +190,6 @@ export class NaiveMouse extends Mouse {
     if (!cell.explored && cell.northWall + cell.southWall + cell.eastWall + cell.westWall >= 3) {
       cell.explored = true;
       this.exploredCells += 1;
-    }
-  }
-
-  convertToRelativeCell(cell: Cell): RelativeCell {
-    switch (this.direction) {
-      case AbsDirection.north:
-        return {
-          frontWall: cell.northWall ? 1 : 0,
-          backWall: cell.southWall ? 1 : 0,
-          rightWall: cell.eastWall ? 1 : 0,
-          leftWall: cell.westWall ? 1 : 0,
-        }
-      case AbsDirection.south:
-        return {
-          frontWall: cell.southWall ? 1 : 0,
-          backWall: cell.northWall ? 1 : 0,
-          rightWall: cell.westWall ? 1 : 0,
-          leftWall: cell.eastWall ? 1 : 0,
-        }
-      case AbsDirection.east:
-        return {
-          frontWall: cell.eastWall ? 1 : 0,
-          backWall: cell.westWall ? 1 : 0,
-          rightWall: cell.southWall ? 1 : 0,
-          leftWall: cell.northWall ? 1 : 0,
-        }
-      case AbsDirection.west:
-        return {
-          frontWall: cell.westWall ? 1 : 0,
-          backWall: cell.eastWall ? 1 : 0,
-          rightWall: cell.northWall ? 1 : 0,
-          leftWall: cell.southWall ? 1 : 0,
-        }
-    }
-  }
-
-  /**
-   * Returns a memory cell relative to mouse position
-   * @param relativeDir
-   */
-  getRelCell(relativeDir: RelativeDirection): Cell {
-    let checkDir: AbsDirection = (this.direction + relativeDir) % 4;
-    return this.getAbsCell(checkDir);
-  }
-
-  /**
-   * Returns a memory cell
-   * @param dir
-   */
-  getAbsCell(dir: AbsDirection): Cell {
-    switch (dir) {
-      case AbsDirection.north:
-        return this.board[this.location.y-1][this.location.x];
-      case AbsDirection.south:
-        return this.board[this.location.y+1][this.location.x];
-      case AbsDirection.east:
-        return this.board[this.location.y][this.location.x+1];
-      case AbsDirection.west:
-        return this.board[this.location.y][this.location.x-1];
     }
   }
 
@@ -306,5 +261,68 @@ export class NaiveMouse extends Mouse {
     console.log(`Mouse: Exploring`);
     this.state = MouseState.Exploring;
     this.createNewJunction = true;
+  }
+
+
+  // ============================================================================================
+  //   Conversion utils
+
+  convertToRelativeCell(cell: Cell): RelativeCell {
+    switch (this.direction) {
+      case AbsDirection.north:
+        return {
+          frontWall: cell.northWall ? 1 : 0,
+          backWall: cell.southWall ? 1 : 0,
+          rightWall: cell.eastWall ? 1 : 0,
+          leftWall: cell.westWall ? 1 : 0,
+        }
+      case AbsDirection.south:
+        return {
+          frontWall: cell.southWall ? 1 : 0,
+          backWall: cell.northWall ? 1 : 0,
+          rightWall: cell.westWall ? 1 : 0,
+          leftWall: cell.eastWall ? 1 : 0,
+        }
+      case AbsDirection.east:
+        return {
+          frontWall: cell.eastWall ? 1 : 0,
+          backWall: cell.westWall ? 1 : 0,
+          rightWall: cell.southWall ? 1 : 0,
+          leftWall: cell.northWall ? 1 : 0,
+        }
+      case AbsDirection.west:
+        return {
+          frontWall: cell.westWall ? 1 : 0,
+          backWall: cell.eastWall ? 1 : 0,
+          rightWall: cell.northWall ? 1 : 0,
+          leftWall: cell.southWall ? 1 : 0,
+        }
+    }
+  }
+
+  /**
+   * Returns a memory cell relative to mouse position
+   * @param relativeDir
+   */
+  getRelCell(relativeDir: RelativeDirection): Cell {
+    let checkDir: AbsDirection = (this.direction + relativeDir) % 4;
+    return this.getAbsCell(checkDir);
+  }
+
+  /**
+   * Returns a memory cell
+   * @param dir
+   */
+  getAbsCell(dir: AbsDirection): Cell {
+    switch (dir) {
+      case AbsDirection.north:
+        return this.board[this.location.y-1][this.location.x];
+      case AbsDirection.south:
+        return this.board[this.location.y+1][this.location.x];
+      case AbsDirection.east:
+        return this.board[this.location.y][this.location.x+1];
+      case AbsDirection.west:
+        return this.board[this.location.y][this.location.x-1];
+    }
   }
 }

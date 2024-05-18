@@ -1,7 +1,7 @@
 import {AbsDirection, RelativeDirection} from "./maze.model";
 
 export enum MouseSpeed {
-  Insta,
+  Insta = 1,
   Fast = 10,
   Medium = 100,
   Slow = 500,
@@ -12,7 +12,8 @@ export enum MouseState {
   Exploring,
   Backtracking,
   Solved,
-  Stuck
+  Stuck,
+  Finished
 }
 
 export interface RelativeCell {

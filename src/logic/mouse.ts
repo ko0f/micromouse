@@ -12,8 +12,8 @@ export class Mouse {
   ) {
   }
 
-  async dwell() {
-    return new Promise(resolve => setTimeout(resolve, this.speed));
+  async dwell(ms?: number) {
+    return new Promise(resolve => setTimeout(resolve, ms || this.speed));
   }
 
   async solve() {

@@ -215,7 +215,10 @@ export class RectMaze extends Maze implements MazeMouseInterface {
   }
 
   turn(relativeDir: RelativeDirection): void {
-    this.mouse.direction = (this.mouse.direction + relativeDir) % 4;
-    this.uiDelegate?.onMouseMoved();
+    const newDirection = (this.mouse.direction + relativeDir) % 4;
+    if (newDirection != this.mouse.direction) {
+      this.mouse.direction = newDirection;
+      this.uiDelegate?.onMouseMoved();
+    }
   }
 }
