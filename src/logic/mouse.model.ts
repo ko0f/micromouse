@@ -1,4 +1,4 @@
-import {AbsDirection, RelativeDirection} from "./maze.model";
+import {AbsDirection} from "./maze.model";
 
 export enum MouseSpeed {
   Insta = 1,

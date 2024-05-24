@@ -2,13 +2,25 @@
 <div class="buttons">
   <input type="button" value="Solve" (click)="onSolveClick()"/>
   <input type="button" value="Cont." (click)="onContinueClick()"/>
-  <input type="button" value="Cont." (click)="onStopMouseClick()"/>
+  <input type="button" value="Stop" (click)="onStopMouseClick()"/>
   <input type="button" value="Reset" (click)="onResetMazeClick()"/>
   <select (change)="onMazeSelected($event)">
     <option *ngFor="let _mazeName of mazeNames" [value]="_mazeName"  [selected]="_mazeName == mazeName">{{_mazeName}}</option>
   </select>
   <select (change)="onSpeedSelected($event)">
     <option *ngFor="let speed of mouseSpeeds" [value]="+speed" [selected]="+speed == mouseSpeed">{{MouseSpeed[+speed]}}</option>
+  </select>
+</div>
+<div class="buttons">
+  <span>&nbsp;&nbsp;Perspective: </span>
+  <select (change)="onPerspectiveSelected($event)">
+    <option value="maze" [selected]="selectedPerspective === 'maze'">Maze</option>
+    <option value="mouse" [selected]="selectedPerspective === 'mouse'">Mouse</option>
+  </select>
+  <span>&nbsp;&nbsp;Path by: </span>
+  <select (change)="onPathBySelected($event)">
+    <option value="time" [selected]="selectedPathBy === 'time'">Time</option>
+    <option value="distance" [selected]="selectedPathBy === 'distance'">Distance</option>
   </select>
 
 </div>

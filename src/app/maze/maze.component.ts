@@ -1,7 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import * as d3 from 'd3';
 import {BaseType} from 'd3';
-import {AbsDirection, Cell, Coords, MazeUiDelegate} from "../../logic/maze.model";
+import {AbsDirection, Cell, CellText, Coords, MazeUiDelegate, RectMazePerspective} from "../../logic/maze.model";
 import {RectMaze} from "../../logic/rect-maze";
 import {Rect} from "./maze.component.model";
 import {NaiveMouse} from "../../logic/naive-mouse";
@@ -27,6 +27,7 @@ export class MazeComponent
   // logic
   maze!: RectMaze;
   mouse!: Mouse;
+  perspective!: RectMazePerspective;
 
   // svg
   svg!: Selection<BaseType, unknown, HTMLElement, any>;
@@ -39,14 +40,17 @@ export class MazeComponent
   gap: number = 0;
   padding: number = 4;
   wallWidth: number = 2;
-  exploredFill: string = "#efefef";
-  unexploredFill: string = "#ddd";
+  exploredFill: string = "#000";
+  unexploredFill: string = "#222";
+  wallColor: string = "#ff6200";
 
   // data
   // mazeStore: string[] = Object.keys(ContestMazesEst);
   mazeStore: MazeDB;
   mazeNames: string[] = [];
   mazeName: string = '';
+  selectedPerspective = 'maze';
+  selectedPathBy = 'time';
 
   protected readonly MouseSpeed = MouseSpeed;
   mouseSpeeds: string[] = Object.keys(MouseSpeed).filter((e: any) => Number(e) >= 0);
@@ -59,6 +63,7 @@ export class MazeComponent
     this.mazeNames = Object.keys(this.mazeStore.files);
     this.mazeName = localStorage.getItem('mazeName') || this.mazeNames[0];
     this.mouseSpeed = parseInt(localStorage.getItem('mouseSpeed') || '0') || MouseSpeed.Medium;
+    this.selectedPerspective = localStorage.getItem('selectedPerspective') || 'maze';
     this.reset().then();
   }
 
@@ -66,7 +71,8 @@ export class MazeComponent
     this.maze = new RectMaze(this);
     const textMaze = await this.mazeStore.loadTextMaze(this.mazeName); // loads with a request
     this.maze.load(textMaze);
-    this.mouse = new NaiveMouse(this.maze, this.mouseSpeed);
+    this.mouse = new NaiveMouse(this.maze, this.mouseSpeed, this);
+    this.perspective = this.selectedPerspective == 'maze' ? this.maze : this.mouse;
     this.draw();
   }
 
@@ -76,6 +82,7 @@ export class MazeComponent
     this.cheeseSvg = this.svg.append("text")
       .attr('class', 'cheese')
       .text('🧀')
+      .style("pointer-events", `none`)
       .attr('style', 'text-shadow: 1px 1px #B88700');
 
     this.mouseSvg = this.svg.append("image")
@@ -86,12 +93,15 @@ export class MazeComponent
   }
 
   draw() {
+    if (!this.perspective)
+      return;
+
     this.svg
-      .attr("width", this.maze.getWidth() * (this.brickSize + this.gap) + this.padding * 2 - this.gap)
-      .attr("height", this.maze.getHeight() * (this.brickSize + this.gap) + this.padding * 2 - this.gap);
+      .attr("width", this.perspective.getWidth() * (this.brickSize + this.gap) + this.padding * 2 - this.gap)
+      .attr("height", this.perspective.getHeight() * (this.brickSize + this.gap) + this.padding * 2 - this.gap);
 
     let row = this.svg.selectAll("g")
-      .data(this.maze.getBoard())
+      .data(this.perspective.getBoard())
       .join("g");
 
     row.selectAll("rect")
@@ -103,30 +113,56 @@ export class MazeComponent
           .attr("y", (d: Cell) => { return d.y * (this.brickSize + this.gap) + this.padding; })
           .attr("width", this.brickSize)
           .attr("height", this.brickSize)
-          .attr("stroke", `#222`)
+          .attr("stroke", this.wallColor)
           .attr("stroke-width", `${this.wallWidth}px`)
+          .on("click", (_, d) => this.mouse.goto({y: d.y - this.perspective.getMouseLocation().y, x: d.x - this.perspective.getMouseLocation().x}, this.selectedPathBy))
       )
       .attr("stroke-dasharray", (d: Cell) => this.calcDashArray(d))
       .attr("fill", (d: Cell) => d.explored ? this.exploredFill : this.unexploredFill)
     ;
 
-    const cheeseCoords = this.calcCellCoords(this.maze.getWinLocation());
-    this.cheeseSvg
-      .attr("dy", `${this.brickSize/2}px`)
-      .attr('x', cheeseCoords.xCenter - this.brickSize/4)
-      .attr('y', cheeseCoords.yCenter - this.brickSize/4)
-      .raise();
+    row.selectAll("text")
+      .data(d => d)
+      .join(
+        enter => enter.append("text")
+          .attr("class", "cell")
+          .attr("x", (d: Cell) => { return d.x * (this.brickSize + this.gap) + this.padding; })
+          .attr("y", (d: Cell) => { return d.y * (this.brickSize + this.gap) + this.padding; })
+          .attr("dy", `${Math.trunc(this.brickSize/2)+3}px`)
+          .attr("dx", `${Math.trunc(this.brickSize/2)-3}px`)
+          // .attr("textLength", this.brickSize)
+          .style("font-family", `"Noto Sans Mono", monospace`)
+          .style("font-size", `8px`)
+          .style("pointer-events", `none`)
+          .attr("fill", '#aaa')
+      )
+      .text((d: Cell) => this.perspective.getText(d, CellText.PathBy) || '')
+    ;
 
-    const mouseCoords = this.calcCellCoords(this.maze.getMouseLocation());
+    if (this.perspective.getWinLocation()) {
+      const cheeseCoords = this.calcCellCoords(this.perspective.getWinLocation()!);
+      this.cheeseSvg
+        .style("visibility", "visible")
+        .attr("dy", `${this.brickSize / 2}px`)
+        .attr('x', cheeseCoords.xCenter - this.brickSize / 4)
+        .attr('y', cheeseCoords.yCenter - this.brickSize / 4)
+        .raise();
+    } else
+      this.cheeseSvg
+        .style("visibility", "hidden");
+
+    const mouseCoords = this.calcCellCoords(this.perspective.getMouseLocation());
     this.mouseSvg
-      .attr('x', mouseCoords.xCenter - this.mouseSize/2)
-      .attr('y', mouseCoords.yCenter - this.mouseSize/2)
       .attr('width', this.mouseSize)
       .attr('height', this.mouseSize)
       .style("transform", `rotate(${this.getMouseAngle()}deg)`)
       .style("transform-origin", `center`)
       .style("transform-box", `content-box`)
-      .raise();
+      .raise()
+      // .transition()
+      .attr('x', mouseCoords.xCenter - this.mouseSize/2)
+      .attr('y', mouseCoords.yCenter - this.mouseSize/2)
+
     ;
     document.getElementById('maze')?.focus();
   }
@@ -138,8 +174,8 @@ export class MazeComponent
   calcDashArray(cell: Cell): string {
     return '' +
       (!cell.y ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
-      (cell.eastWall || cell.x == this.maze.getWidth()-1 ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
-      (cell.southWall || cell.y == this.maze.getHeight()-1 ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
+      (cell.eastWall || cell.x == this.perspective.getWidth()-1 ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
+      (cell.southWall || cell.y == this.perspective.getHeight()-1 ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `) +
       (!cell.x ? `${this.brickSize} 0 ` : `0 ${this.brickSize} `)
       ;
   }
@@ -234,11 +270,26 @@ export class MazeComponent
     this.mouse.stop();
   }
 
+  onPerspectiveSelected(event: any) {
+    this.selectedPerspective = event.target.value;
+    localStorage.setItem('selectedPerspective', this.selectedPerspective);
+    this.perspective = this.selectedPerspective == 'maze' ? this.maze : this.mouse;
+    this.draw();
+  }
+
+  onPathBySelected(event: any) {
+    this.selectedPathBy = event.target.value;
+  }
+
   // -----------------------------------------------------------------------------------------
   //   MazeUiDelegate
 
   onMouseMoved() {
     // this.ref.detectChanges();
+    this.draw();
+  }
+
+  redrawRequired() {
     this.draw();
   }
 }

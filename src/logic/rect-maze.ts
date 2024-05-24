@@ -6,11 +6,11 @@ import {
   EstMaze,
   MazeBoard,
   MazeMouseInterface,
-  MazeUiDelegate,
+  MazeUiDelegate, RectMazePerspective,
   RelativeDirection
 } from "./maze.model";
 
-export class RectMaze extends Maze implements MazeMouseInterface {
+export class RectMaze extends Maze implements MazeMouseInterface, RectMazePerspective {
   protected width: number = 16;
   protected height: number = 16;
   protected board: MazeBoard = [];
@@ -158,6 +158,10 @@ export class RectMaze extends Maze implements MazeMouseInterface {
 
   getHeight() {
     return this.height;
+  }
+
+  getText(cell: Cell): string | undefined {
+    return undefined;
   }
 
   // --------------------------------------------------------------------------

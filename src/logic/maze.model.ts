@@ -1,7 +1,8 @@
-export type MazeBoard = Cell[][];
+import {NaiveMouseCell} from "./naive-mouse.model";
 
 export interface MazeUiDelegate {
   onMouseMoved(): void;
+  redrawRequired(): void;
 }
 
 export interface CellWalls {
@@ -15,6 +16,7 @@ export interface Cell extends CellWalls {
   x: number;
   y: number;
   explored?: boolean;
+  visited?: boolean;
 }
 
 export interface Coords {
@@ -41,6 +43,10 @@ export enum RelativeDirection {
   right,
   back,
   left
+}
+
+export interface UIMouseInterface {
+  draw(): void;
 }
 
 export interface MazeMouseInterface {
@@ -71,4 +77,25 @@ export interface MazeMouseInterface {
    * @param cells
    */
   moveForward(cells: number): boolean;
+}
+
+export interface RectMazePerspective {
+  getBoard(): MazeBoard;
+  getWinLocation(): Coords|undefined;
+  getMouseLocation(): Coords;
+  getMouseDirection(): AbsDirection;
+  getWidth(): number;
+  getHeight(): number;
+  getText(cell: Cell, textType: CellText): string|undefined;
+}
+
+export type MazeBoard = Cell[][];
+export type CellEvent = (coords: Coords) => void;
+
+export enum CellText {
+  None,
+  Distance,
+  Time,
+  Deadend,
+  PathBy,
 }
