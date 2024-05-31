@@ -10,7 +10,7 @@ import {
   MazeUiDelegate,
   RelativeDirection
 } from "./maze.model";
-import {MouseBacktrackInst, MouseSpeed, MouseState, RelativeCell} from "./mouse.model";
+import {MouseBacktrackInst, MouseSpeed, MouseState, MovementTime, RelativeCell} from "./mouse.model";
 import {PathingGoal, RectMouseBoard, RectMouseCell} from "./rect-mouse.model";
 
 /**
@@ -219,10 +219,11 @@ export class RectMouse extends Mouse {
   }
 
   moveForward(cells: number, dontRedraw?: boolean, preMoveAction?: CellEvent, postMoveAction?: (coords: Coords) => void): void {
-    console.log(`Mouse: Moving forward ${cells}`);
-
-    if (!this.maze.moveForward(cells, dontRedraw))
-      throw `Crashed into a wall!`;
+    if (this.state != MouseState.Pathing) {
+      console.log(`Mouse: Moving forward ${cells}`);
+      if (!this.maze.moveForward(cells, dontRedraw))
+        throw `Crashed into a wall!`;
+    }
 
     for (let i = 0; i < cells; i++) {
       preMoveAction && preMoveAction(this.location);
@@ -244,7 +245,7 @@ export class RectMouse extends Mouse {
     }
 
     // record backtrack instructions
-    if (this.state == MouseState.Exploring && this.junctions.length) {
+    if ([MouseState.Exploring, MouseState.Pathing].includes(this.state) && this.junctions.length) {
       if (this.createNewJunction) {
         this.createNewJunction = false;
         this.junctions.push([]);
@@ -259,12 +260,14 @@ export class RectMouse extends Mouse {
   }
 
   turn(relativeDir: RelativeDirection): void {
-    console.log(`Mouse: Turning ${relativeDir}`);
-    this.maze.turn(relativeDir);
+    if (this.state != MouseState.Pathing) {
+      console.log(`Mouse: Turning ${relativeDir}`);
+      this.maze.turn(relativeDir);
+    }
     this.direction = (this.direction + relativeDir) % 4;
 
     // record backtrack instructions, don't record first turn
-    if (this.state == MouseState.Exploring && this.junctions.length) {
+    if ([MouseState.Exploring, MouseState.Pathing].includes(this.state) && this.junctions.length) {
       this.createNewJunction = false;
       const junction = this.junctions[this.junctions.length - 1];
       junction.push({dir: this.direction, steps: 0});
@@ -490,7 +493,7 @@ export class RectMouse extends Mouse {
 
   override async goto(_dest: Coords, pathBy: PathingGoal): Promise<void> {
     this.pathBy = pathBy;
-    if (this.state == MouseState.Finished) {
+    if (this.state >= MouseState.Finished) {
       let startTime = +Date.now();
       const dest: Coords = {y: this.location.y + _dest.y, x: this.location.x + _dest.x};
       console.log(`Goto ${_dest.y},${_dest.x} -> ${dest.y},${dest.x}`);
@@ -498,47 +501,76 @@ export class RectMouse extends Mouse {
       await this.floodFill(this.location, dest);
       this.ui.redrawRequired();
 
-      do {
-        let cell = this.board[this.location.y][this.location.x];
-        let dir: AbsDirection | undefined;
-        let minValue = Infinity;
-        cell.visited = true;
+      this.junctions = [[{dir: this.direction, steps: 0}]];
+      this.state = MouseState.Pathing;
+      const location = this.location;
+      const dir = this.direction;
+      await this.findPath(dest);
 
-        const checkWall = (wallDir: AbsDirection) => {
-          if (!this.hasWall(cell, wallDir)) {
-            let nextCell = this.getAbsCell(wallDir);
-            if (!nextCell.visited) {
-              const nextCellValue = (nextCell as any)[PathByKey[this.pathBy]];
-              if (nextCellValue != undefined && nextCellValue < minValue) {
-                dir = wallDir;
-                minValue = nextCellValue;
-              }
-            }
-          }
-        };
-        checkWall(AbsDirection.north);
-        checkWall(AbsDirection.south);
-        checkWall(AbsDirection.east);
-        checkWall(AbsDirection.west);
+      this.location = location;
+      this.direction = dir;
+      this.state = MouseState.Finished;
 
-        if (dir == undefined)
-          throw `Got stuck!`;
-        else {
-          const relDir = (dir - this.direction + 4) % 4;
-          if (relDir != RelativeDirection.front) {
-            this.turn(relDir);
-            this.moveForward(1);
-          } else
-            this.moveForward(1);
-        }
-        await this.dwell();
-      } while (this.location.y != dest.y || this.location.x != dest.x);
+      await this.gotoPath();
+
       this.ui.redrawRequired();
       let endTime = +Date.now();
       console.log(`It took ${(endTime - startTime)}ms!`);
     } else {
       console.log(`Must finish maze first!`)
     }
+  }
+
+  async gotoPath(): Promise<void> {
+    let instructions: MouseBacktrackInst[] = this.junctions.pop()!;
+    let inst;
+    while (inst = instructions.shift()) {
+      const absDir = (inst.dir - this.direction + 4) % 4;
+      this.turn(absDir);
+      await this.dwell(MovementTime.turn);
+      const time = MovementTime.move(inst.steps) / inst.steps;
+      for (let i = 0; i < inst.steps; i++) {
+        this.moveForward(1, false);
+        await this.dwell(time);
+      }
+    }
+  }
+
+  async findPath(dest: Coords): Promise<void> {
+    do {
+      let cell = this.board[this.location.y][this.location.x];
+      let dir: AbsDirection | undefined;
+      let minValue = Infinity;
+      cell.visited = true;
+
+      const checkWall = (wallDir: AbsDirection) => {
+        if (!this.hasWall(cell, wallDir)) {
+          let nextCell = this.getAbsCell(wallDir);
+          if (!nextCell.visited) {
+            const nextCellValue = (nextCell as any)[PathByKey[this.pathBy]];
+            if (nextCellValue != undefined && nextCellValue < minValue) {
+              dir = wallDir;
+              minValue = nextCellValue;
+            }
+          }
+        }
+      };
+      checkWall(AbsDirection.north);
+      checkWall(AbsDirection.south);
+      checkWall(AbsDirection.east);
+      checkWall(AbsDirection.west);
+
+      if (dir == undefined)
+        throw `Got stuck!`;
+      else {
+        const relDir = (dir - this.direction + 4) % 4;
+        if (relDir != RelativeDirection.front) {
+          this.turn(relDir);
+          this.moveForward(1);
+        } else
+          this.moveForward(1);
+      }
+    } while (this.location.y != dest.y || this.location.x != dest.x);
   }
 
   async floodFill(source: Coords, dest: Coords, distance: number = 0, time: number = 0, dir?: AbsDirection) {

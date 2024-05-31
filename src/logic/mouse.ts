@@ -23,8 +23,8 @@ export class Mouse implements RectMazePerspective {
   }
 
   async dwell(ms?: number, redraw?: boolean) {
-    if (redraw)
-      this.ui.redrawRequired();
+    // if (redraw)
+    //   this.ui.redrawRequired();
     return new Promise(resolve => setTimeout(resolve, ms || this.speed));
   }
 
