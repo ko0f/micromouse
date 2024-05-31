@@ -79,8 +79,13 @@ export class RectMouse extends Mouse {
       this.state = MouseState.Finished;
       this.rememberMaze();
       console.log(`Mouse: Finished!`);
-      // await this.goto({x:0, y:0}, this.pathBy);
+      await this.goHome();
     }
+  }
+
+  async goHome() {
+    const size = this.maze.getSize();
+    await this.goto({x: size.width - this.location.x, y: size.height - this.location.y}, this.pathBy);
   }
 
 
