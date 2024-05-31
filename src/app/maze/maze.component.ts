@@ -6,7 +6,7 @@ import {RectMaze} from "../../logic/rect-maze";
 import {Rect} from "./maze.component.model";
 import {RectMouse} from "../../logic/rect-mouse";
 import {Selection} from "d3-selection";
-import {MouseSpeed} from "../../logic/mouse.model";
+import {MouseSpeed, MouseState} from "../../logic/mouse.model";
 import {Mouse} from "../../logic/mouse";
 import {CommonModule} from "@angular/common";
 import {MazeDB} from "../../logic/maze-db";
@@ -58,6 +58,9 @@ export class MazeComponent
   protected readonly MouseSpeed = MouseSpeed;
   mouseSpeeds: string[] = Object.keys(MouseSpeed).filter((e: any) => Number(e) >= 0);
   mouseSpeed: MouseSpeed = MouseSpeed.Medium;
+
+  timeStart: number = 0;
+  timeEnd: number = 0;
 
   constructor(
     httpClient: HttpClient
@@ -118,7 +121,7 @@ export class MazeComponent
           .attr("height", this.brickSize)
           .attr("stroke", this.wallColor)
           .attr("stroke-width", `${this.wallWidth}px`)
-          .on("click", (_, d) => this.mouse.goto({y: d.y - this.perspective.getMouseLocation().y, x: d.x - this.perspective.getMouseLocation().x}, this.selectedPathBy))
+          .on("click", (_, d) => this.gotoCell(d))
       )
       .attr("stroke-dasharray", (d: Cell) => this.calcDashArray(d))
       .attr("fill", (d: Cell) => d.explored ? this.exploredFill : this.unexploredFill)
@@ -241,6 +244,7 @@ export class MazeComponent
   }
 
   onSolveClick() {
+    this.timerStart();
     this.mouse.solve().then();
   }
 
@@ -302,7 +306,40 @@ export class MazeComponent
       this.draw();
   }
 
+  onMouseChangedState(state: MouseState): void {
+    switch (state) {
+      case MouseState.Finished:
+        this.timerStop();
+    }
+  }
+
   redrawRequired() {
     this.draw();
   }
+
+
+  // -----------------------------------------------------------------------------------------
+  //   Timer
+
+  timerStart() {
+    this.timeStart = +new Date();
+    this.timeEnd = 0;
+  }
+
+  timerStop() {
+    this.timeEnd = +new Date();
+  }
+
+  getTimeSeconds() {
+    return ((this.timeEnd || (+new Date())) - this.timeStart) / 1000;
+  }
+
+  async gotoCell(cell: Cell) {
+    this.timerStart();
+    const y = cell.y - this.perspective.getMouseLocation().y;
+    const x = cell.x - this.perspective.getMouseLocation().x;
+    await this.mouse.goto({y, x}, this.selectedPathBy);
+    this.timerStop();
+  }
+
 }

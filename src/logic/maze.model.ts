@@ -1,5 +1,8 @@
+import {MouseState} from "./mouse.model";
+
 export interface MazeUiDelegate {
   onMouseMoved(dontRedraw?: boolean): void;
+  onMouseChangedState(state: MouseState): void;
   redrawRequired(): void;
 }
 

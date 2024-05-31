@@ -76,7 +76,7 @@ export class RectMouse extends Mouse {
     if (this.state == MouseState.Stuck) {
       console.log(`Mouse: Stuck!`);
     } else {
-      this.state = MouseState.Finished;
+      this.setState(MouseState.Finished);
       this.rememberMaze();
       console.log(`Mouse: Finished!`);
       await this.goHome();
@@ -88,12 +88,11 @@ export class RectMouse extends Mouse {
     await this.goto({x: size.width - this.location.x, y: size.height - this.location.y}, this.pathBy);
   }
 
-
   // ============================================================================================
   //   Exploration
 
   async explore() {
-    this.state = MouseState.Exploring;
+    this.setState(MouseState.Exploring);
 
     try {
       while (this.shouldKeepExploring() && !this._stop) {
@@ -126,11 +125,11 @@ export class RectMouse extends Mouse {
         }
       }
     } catch (e) {
-      this.state = MouseState.Stuck;
+      this.setState(MouseState.Stuck);
       console.error(e);
     }
     if (this.maze.hasReachedGoal()) {
-      this.state = MouseState.Solved;
+      this.setState(MouseState.Solved);
       this.solved = true;
       this.cheese = {...this.location};
     }
@@ -282,15 +281,15 @@ export class RectMouse extends Mouse {
     if (!instructions) {
       // no more junctions
       if (this.solved) {
-        this.state = MouseState.Finished;
+        this.setState(MouseState.Finished);
         return;
       } else {
-        this.state = MouseState.Stuck;
+        this.setState(MouseState.Stuck);
         throw `No more junctions!`
       }
     }
 
-    this.state = MouseState.Backtracking;
+    this.setState(MouseState.Backtracking);
     this.turn(RelativeDirection.back);
 
     let preMove: CellEvent|undefined = isDeadend ? (coords) => {
@@ -309,7 +308,7 @@ export class RectMouse extends Mouse {
       }
     }
     console.log(`Mouse: Exploring`);
-    this.state = MouseState.Exploring;
+    this.setState(MouseState.Exploring);
     this.createNewJunction = true;
   }
 
@@ -461,6 +460,12 @@ export class RectMouse extends Mouse {
     }
     return false;
   }
+
+  setState(state: MouseState) {
+    this.state = state;
+    this.ui.onMouseChangedState(this.state);
+  }
+
 
   // ============================================================================================
   //   Pathing
