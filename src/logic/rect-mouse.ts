@@ -11,7 +11,7 @@ import {
   RelativeDirection
 } from "./maze.model";
 import {MouseBacktrackInst, MouseSpeed, MouseState, RelativeCell} from "./mouse.model";
-import {NaiveMouseBoard, NaiveMouseCell} from "./naive-mouse.model";
+import {PathingGoal, RectMouseBoard, RectMouseCell} from "./rect-mouse.model";
 
 /**
  * Simple mouse in rect maze solver.
@@ -28,10 +28,10 @@ import {NaiveMouseBoard, NaiveMouseCell} from "./naive-mouse.model";
  *     # # # # #
  *     # # # # #
  */
-export class NaiveMouse extends Mouse {
+export class RectMouse extends Mouse {
 
   // board state
-  board!: NaiveMouseBoard;
+  board!: RectMouseBoard;
   location!: Coords;
   direction!: AbsDirection;
   cheese?: Coords;
@@ -47,7 +47,7 @@ export class NaiveMouse extends Mouse {
 
   // config
   autoContinue: boolean = true;
-  pathBy: string = 'time';
+  pathBy: PathingGoal = PathingGoal.Time;
 
   constructor(
     maze: MazeMouseInterface,
@@ -77,90 +77,10 @@ export class NaiveMouse extends Mouse {
       console.log(`Mouse: Stuck!`);
     } else {
       this.state = MouseState.Finished;
+      this.rememberMaze();
       console.log(`Mouse: Finished!`);
+      // await this.goto({x:0, y:0}, this.pathBy);
     }
-  }
-
-  override async goto(_dest: Coords, pathBy: string): Promise<void> {
-    this.pathBy = pathBy;
-    if (this.state == MouseState.Finished) {
-      const dest: Coords = {y: this.location.y + _dest.y, x: this.location.x + _dest.x};
-      console.log(`Goto ${_dest.y},${_dest.x} -> ${dest.y},${dest.x}`);
-
-      await this.floodFill(this.location, dest);
-
-      do {
-        let cell = this.board[this.location.y][this.location.x];
-        let dir: AbsDirection | undefined;
-        let minValue = Infinity;
-        cell.visited = true;
-
-        const checkWall = (wallDir: AbsDirection) => {
-          if (!this.hasWall(cell, wallDir)) {
-            let nextCell = this.getAbsCell(wallDir);
-            if (!nextCell.visited && (nextCell as any)[this.pathBy] < minValue) {
-              dir = wallDir;
-              minValue = (nextCell as any)[this.pathBy];
-            }
-          }
-        };
-        checkWall(AbsDirection.north);
-        checkWall(AbsDirection.south);
-        checkWall(AbsDirection.east);
-        checkWall(AbsDirection.west);
-
-        if (dir == undefined)
-          throw `Got stuck!`;
-        else {
-          const relDir = (dir - this.direction + 4) % 4;
-          this.turn(relDir);
-          this.moveForward(1);
-        }
-        await this.dwell();
-      } while (this.location.y != dest.y || this.location.x != dest.x);
-      this.ui.redrawRequired();
-    } else {
-      console.log(`Must finish maze first!`)
-    }
-  }
-
-  async floodFill(source: Coords, dest: Coords, distance: number = 0, time: number = 0, dir?: AbsDirection) {
-    if (!distance) {
-      this.resetExplored();
-    }
-
-    if (dest.y == source.y && dest.x == source.x) {
-      return; // reached dest
-    }
-
-    if (!this.board[dest.y] || !this.board[dest.y][dest.x]) {
-      return; // memory maze borders
-    }
-
-    const cell = this.board[dest.y][dest.x];
-    if (cell.explored && (this.pathBy == 'distance' && cell.distance! <= distance || this.pathBy == 'time' && cell.time! <= time)) {
-      return;
-    }
-
-    cell.explored = true;
-    if (cell.deadend) {
-      cell.distance = 999;
-      cell.time = 999;
-      return;
-    }
-    cell.distance = distance;
-    cell.time = time;
-
-    // await this.dwell(undefined, true);
-
-    if (!cell.northWall)
-      await this.floodFill(source, {...dest, y: dest.y-1}, distance+1, dir == AbsDirection.north ? time+0.1 : time+1, AbsDirection.north);
-    if (!cell.southWall)
-      await this.floodFill(source, {...dest, y: dest.y+1}, distance+1, dir == AbsDirection.south ? time+0.1 : time+1, AbsDirection.south);
-    if (!cell.westWall)
-      await this.floodFill(source, {...dest, x: dest.x-1}, distance+1, dir == AbsDirection.west ? time+0.1 : time+1, AbsDirection.west);
-    if (!cell.eastWall)
-      await this.floodFill(source, {...dest, x: dest.x+1}, distance+1, dir == AbsDirection.east ? time+0.1 : time+1, AbsDirection.east);
   }
 
 
@@ -223,23 +143,25 @@ export class NaiveMouse extends Mouse {
     }
     this.direction = AbsDirection.north;
 
-    this.board = [];
-    for (let y = 0; y < size.height * 2 + 1; y++) {
-      const row: Cell[] = [];
-      this.board.push(row);
-      for (let x = 0; x < size.width * 2 + 1; x++) {
-        row.push({
-          x, y, explored: false,
-          northWall: 0,
-          southWall: 0,
-          eastWall: 0,
-          westWall: 0,
-        });
+    if (!this.recallMaze()) {
+      this.board = [];
+      for (let y = 0; y < size.height * 2 + 1; y++) {
+        const row: Cell[] = [];
+        this.board.push(row);
+        for (let x = 0; x < size.width * 2 + 1; x++) {
+          row.push({
+            x, y, explored: false,
+            northWall: 0,
+            southWall: 0,
+            eastWall: 0,
+            westWall: 0,
+          });
+        }
       }
     }
   }
 
-  inspectCurrentCell(): NaiveMouseCell {
+  inspectCurrentCell(): RectMouseCell {
     const cell = this.board[this.location.y][this.location.x];
     if (!cell.explored) {
       this.exploredCells += 1;
@@ -284,7 +206,7 @@ export class NaiveMouse extends Mouse {
    * Skips cells we can conclude are a dead-end
    * @param cell
    */
-  checkCellIndirectKnowledge(cell: NaiveMouseCell) {
+  checkCellIndirectKnowledge(cell: RectMouseCell) {
     if (!cell.explored && cell.northWall + cell.southWall + cell.eastWall + cell.westWall >= 3) {
       cell.explored = true;
       cell.deadend = true;
@@ -292,10 +214,10 @@ export class NaiveMouse extends Mouse {
     }
   }
 
-  moveForward(cells: number, preMoveAction?: CellEvent, postMoveAction?: (coords: Coords) => void): void {
+  moveForward(cells: number, dontRedraw?: boolean, preMoveAction?: CellEvent, postMoveAction?: (coords: Coords) => void): void {
     console.log(`Mouse: Moving forward ${cells}`);
 
-    if (!this.maze.moveForward(cells))
+    if (!this.maze.moveForward(cells, dontRedraw))
       throw `Crashed into a wall!`;
 
     for (let i = 0; i < cells; i++) {
@@ -376,7 +298,7 @@ export class NaiveMouse extends Mouse {
       await this.dwell();
       const absDir = (inst.dir - this.direction + 6) % 4;
       this.turn(absDir);
-      this.moveForward(inst.steps, preMove);
+      this.moveForward(inst.steps, false, preMove);
       if (preMove) {
         preMove = undefined; // do it only for the 1st backtrack
       }
@@ -427,7 +349,7 @@ export class NaiveMouse extends Mouse {
    * Returns a memory cell relative to mouse position
    * @param relativeDir
    */
-  getRelCell(relativeDir: RelativeDirection): NaiveMouseCell {
+  getRelCell(relativeDir: RelativeDirection): RectMouseCell {
     let checkDir: AbsDirection = (this.direction + relativeDir) % 4;
     return this.getAbsCell(checkDir);
   }
@@ -436,7 +358,7 @@ export class NaiveMouse extends Mouse {
    * Returns a memory cell
    * @param dir
    */
-  getAbsCell(dir: AbsDirection): NaiveMouseCell {
+  getAbsCell(dir: AbsDirection): RectMouseCell {
     switch (dir) {
       case AbsDirection.north:
         return this.board[this.location.y - 1][this.location.x];
@@ -486,18 +408,53 @@ export class NaiveMouse extends Mouse {
     return this.board[0].length;
   }
 
-  override getText(cell: NaiveMouseCell, textType: CellText): string | undefined {
+  override getText(cell: RectMouseCell, textType: CellText): string | undefined {
     switch (textType) {
       case CellText.Time:
         return cell.time ? `${Math.round(cell.time*10)/10}` : '';
       case CellText.Distance:
         return `${cell.distance || ''}`;
       case CellText.PathBy:
-        return cell.deadend ? 'D' : (this.pathBy == 'distance' ? `${cell.distance || ''}` : (cell.time ? `${Math.round(cell.time*10)/10}` : ''));
+        return cell.deadend ? 'D' : (this.pathBy == PathingGoal.Distance ? `${cell.distance || ''}` : (cell.time ? `${Math.round(cell.time*10)/10}` : ''));
       case CellText.Deadend:
         return cell.deadend ? 'D' : '';
     }
     return '';
+  }
+
+  getMazeMemoryKey() {
+    return `mouse-maze-${this.maze.getMazeName()}`;
+  }
+
+  rememberMaze() {
+    if (this.state == MouseState.Finished) {
+      const storeObject = {
+        board: this.board,
+        cheese: this.cheese,
+        totalCells: this.totalCells,
+        exploredCells: this.exploredCells,
+        state: this.state,
+      }
+      localStorage.setItem(this.getMazeMemoryKey(), JSON.stringify(storeObject));
+    }
+  }
+
+  override forgetMaze() {
+    localStorage.removeItem(this.getMazeMemoryKey());
+  }
+
+  recallMaze(): boolean {
+    const json = localStorage.getItem(this.getMazeMemoryKey());
+    if (json) {
+      const storeObject = JSON.parse(json);
+      this.board = storeObject.board;
+      this.cheese = storeObject.cheese;
+      this.totalCells = storeObject.totalCells;
+      this.exploredCells = storeObject.exploredCells;
+      this.state = storeObject.state;
+      return true;
+    }
+    return false;
   }
 
   // ============================================================================================
@@ -521,4 +478,99 @@ export class NaiveMouse extends Mouse {
     }
   }
 
+  override async goto(_dest: Coords, pathBy: PathingGoal): Promise<void> {
+    this.pathBy = pathBy;
+    if (this.state == MouseState.Finished) {
+      let startTime = +Date.now();
+      const dest: Coords = {y: this.location.y + _dest.y, x: this.location.x + _dest.x};
+      console.log(`Goto ${_dest.y},${_dest.x} -> ${dest.y},${dest.x}`);
+
+      await this.floodFill(this.location, dest);
+      this.ui.redrawRequired();
+
+      do {
+        let cell = this.board[this.location.y][this.location.x];
+        let dir: AbsDirection | undefined;
+        let minValue = Infinity;
+        cell.visited = true;
+
+        const checkWall = (wallDir: AbsDirection) => {
+          if (!this.hasWall(cell, wallDir)) {
+            let nextCell = this.getAbsCell(wallDir);
+            if (!nextCell.visited) {
+              const nextCellValue = (nextCell as any)[PathByKey[this.pathBy]];
+              if (nextCellValue != undefined && nextCellValue < minValue) {
+                dir = wallDir;
+                minValue = nextCellValue;
+              }
+            }
+          }
+        };
+        checkWall(AbsDirection.north);
+        checkWall(AbsDirection.south);
+        checkWall(AbsDirection.east);
+        checkWall(AbsDirection.west);
+
+        if (dir == undefined)
+          throw `Got stuck!`;
+        else {
+          const relDir = (dir - this.direction + 4) % 4;
+          if (relDir != RelativeDirection.front) {
+            this.turn(relDir);
+            this.moveForward(1);
+          } else
+            this.moveForward(1);
+        }
+        await this.dwell();
+      } while (this.location.y != dest.y || this.location.x != dest.x);
+      this.ui.redrawRequired();
+      let endTime = +Date.now();
+      console.log(`It took ${(endTime - startTime)}ms!`);
+    } else {
+      console.log(`Must finish maze first!`)
+    }
+  }
+
+  async floodFill(source: Coords, dest: Coords, distance: number = 0, time: number = 0, dir?: AbsDirection) {
+    if (!distance) {
+      this.resetExplored();
+    }
+
+    if (dest.y == source.y && dest.x == source.x) {
+      return; // reached dest
+    }
+
+    if (!this.board[dest.y] || !this.board[dest.y][dest.x]) {
+      return; // memory maze borders
+    }
+
+    const cell = this.board[dest.y][dest.x];
+    if (cell.explored && (this.pathBy == PathingGoal.Distance && cell.distance! <= distance || this.pathBy == PathingGoal.Time && cell.time! <= time)) {
+      return;
+    }
+
+    cell.explored = true;
+    cell.distance = distance;
+    cell.time = time;
+
+    // await this.dwell(undefined, true);
+
+    if (!cell.northWall)
+      await this.floodFill(source, {...dest, y: dest.y-1}, distance+1, dir == AbsDirection.north ? time+0.1 : time+1, AbsDirection.north);
+    if (!cell.southWall)
+      await this.floodFill(source, {...dest, y: dest.y+1}, distance+1, dir == AbsDirection.south ? time+0.1 : time+1, AbsDirection.south);
+    if (!cell.westWall)
+      await this.floodFill(source, {...dest, x: dest.x-1}, distance+1, dir == AbsDirection.west ? time+0.1 : time+1, AbsDirection.west);
+    if (!cell.eastWall)
+      await this.floodFill(source, {...dest, x: dest.x+1}, distance+1, dir == AbsDirection.east ? time+0.1 : time+1, AbsDirection.east);
+  }
+
+
+}
+
+const PathByKey: {[key: number]: string} = {};
+for (const key of Object.keys(PathingGoal)) {
+  const num = +key;
+  if (num >= 0)
+    PathByKey[+key] = PathingGoal[+key].toLowerCase();
 }

@@ -8,6 +8,7 @@ import {
   UIMouseInterface
 } from "./maze.model";
 import {MouseSpeed} from "./mouse.model";
+import {PathingGoal} from "./rect-mouse.model";
 
 export class Mouse implements RectMazePerspective {
 
@@ -35,7 +36,7 @@ export class Mouse implements RectMazePerspective {
     throw new Error(`Not implemented`);
   }
 
-  async goto(coords: Coords, pathBy: string) {
+  async goto(coords: Coords, pathBy: PathingGoal) {
     throw new Error(`Not implemented`);
   }
 
@@ -69,5 +70,9 @@ export class Mouse implements RectMazePerspective {
 
   getText(cell: Cell, textType: CellText): string | undefined {
     return undefined;
+  }
+
+  forgetMaze() {
+    throw `Not implemented`;
   }
 }

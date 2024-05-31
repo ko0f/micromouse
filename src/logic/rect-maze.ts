@@ -11,13 +11,14 @@ import {
 } from "./maze.model";
 
 export class RectMaze extends Maze implements MazeMouseInterface, RectMazePerspective {
+  protected mazeName: string = '';
   protected width: number = 16;
   protected height: number = 16;
   protected board: MazeBoard = [];
   protected win: Coords = {x: 0, y: 0};
   protected mouse: {
     location: Coords;
-    direction: AbsDirection;
+    direction: number;
   } = {
     location: {x: 0, y: 0},
     direction: AbsDirection.south,
@@ -83,7 +84,8 @@ export class RectMaze extends Maze implements MazeMouseInterface, RectMazePerspe
     this.carveCurrent();
   }
 
-  load(textMaze: string) {
+  load(textMaze: string, name: string) {
+    this.mazeName = name;
     if (!textMaze || !textMaze.length)
       throw `Empty maze`;
 
@@ -167,6 +169,10 @@ export class RectMaze extends Maze implements MazeMouseInterface, RectMazePerspe
   // --------------------------------------------------------------------------
   //   Mouse Interface
 
+  getMazeName(): string {
+    return this.mazeName;
+  }
+
   hasWall(relativeDir: RelativeDirection): boolean {
     let checkDir: AbsDirection = (this.mouse.direction + relativeDir) % 4;
     switch (checkDir) {
@@ -189,7 +195,7 @@ export class RectMaze extends Maze implements MazeMouseInterface, RectMazePerspe
     return {width: this.width, height: this.height};
   }
 
-  moveForward(cells: number): boolean {
+  moveForward(cells: number, dontRedraw?: boolean): boolean {
     const mouseCell = this.board[this.mouse.location.y][this.mouse.location.x];
     switch (this.mouse.direction) {
       case AbsDirection.north:
@@ -214,7 +220,7 @@ export class RectMaze extends Maze implements MazeMouseInterface, RectMazePerspe
         break;
     }
     this.carveCurrent();
-    this.uiDelegate?.onMouseMoved();
+    this.uiDelegate?.onMouseMoved(dontRedraw);
     return true;
   }
 

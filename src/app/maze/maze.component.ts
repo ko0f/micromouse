@@ -4,13 +4,14 @@ import {BaseType} from 'd3';
 import {AbsDirection, Cell, CellText, Coords, MazeUiDelegate, RectMazePerspective} from "../../logic/maze.model";
 import {RectMaze} from "../../logic/rect-maze";
 import {Rect} from "./maze.component.model";
-import {NaiveMouse} from "../../logic/naive-mouse";
+import {RectMouse} from "../../logic/rect-mouse";
 import {Selection} from "d3-selection";
 import {MouseSpeed} from "../../logic/mouse.model";
 import {Mouse} from "../../logic/mouse";
 import {CommonModule} from "@angular/common";
 import {MazeDB} from "../../logic/maze-db";
 import {HttpClient, HttpClientModule} from "@angular/common/http";
+import {PathingGoal} from "../../logic/rect-mouse.model";
 
 @Component({
   selector: 'app-maze',
@@ -50,7 +51,9 @@ export class MazeComponent
   mazeNames: string[] = [];
   mazeName: string = '';
   selectedPerspective = 'maze';
-  selectedPathBy = 'time';
+
+  protected readonly PathingGoal = PathingGoal;
+  selectedPathBy = PathingGoal.Time;
 
   protected readonly MouseSpeed = MouseSpeed;
   mouseSpeeds: string[] = Object.keys(MouseSpeed).filter((e: any) => Number(e) >= 0);
@@ -70,8 +73,8 @@ export class MazeComponent
   async reset() {
     this.maze = new RectMaze(this);
     const textMaze = await this.mazeStore.loadTextMaze(this.mazeName); // loads with a request
-    this.maze.load(textMaze);
-    this.mouse = new NaiveMouse(this.maze, this.mouseSpeed, this);
+    this.maze.load(textMaze, this.mazeName);
+    this.mouse = new RectMouse(this.maze, this.mouseSpeed, this);
     this.perspective = this.selectedPerspective == 'maze' ? this.maze : this.mouse;
     this.draw();
   }
@@ -252,6 +255,14 @@ export class MazeComponent
     ;
   }
 
+  onRedrawClick() {
+    this.draw();
+  }
+
+  onForgetClick() {
+    this.mouse.forgetMaze();
+  }
+
   onMazeSelected(event: Event) {
     this.mazeName = (event.target as HTMLSelectElement).value;
     localStorage.setItem('mazeName', this.mazeName);
@@ -262,8 +273,9 @@ export class MazeComponent
   onSpeedSelected(event: Event) {
     this.mouseSpeed = +(event.target as HTMLSelectElement).value;
     localStorage.setItem('mouseSpeed', ''+this.mouseSpeed);
-    this.reset()
-      .then(() => this.draw());
+    this.mouse.speed = this.mouseSpeed;
+    // this.reset()
+    //   .then(() => this.draw());
   }
 
   onStopMouseClick() {
@@ -284,9 +296,10 @@ export class MazeComponent
   // -----------------------------------------------------------------------------------------
   //   MazeUiDelegate
 
-  onMouseMoved() {
+  onMouseMoved(dontRedraw?: boolean) {
     // this.ref.detectChanges();
-    this.draw();
+    if (!dontRedraw)
+      this.draw();
   }
 
   redrawRequired() {

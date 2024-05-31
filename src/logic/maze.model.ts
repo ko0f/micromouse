@@ -1,7 +1,5 @@
-import {NaiveMouseCell} from "./naive-mouse.model";
-
 export interface MazeUiDelegate {
-  onMouseMoved(): void;
+  onMouseMoved(dontRedraw?: boolean): void;
   redrawRequired(): void;
 }
 
@@ -51,6 +49,10 @@ export interface UIMouseInterface {
 
 export interface MazeMouseInterface {
   /**
+   * Returns the maze's name.
+   */
+  getMazeName(): string;
+  /**
    * Check if there's a wall.
    * @param relativeDir Since the mouse doesn't know where north is, the maze can tell if there's a wall relative to the mouse.
    */
@@ -76,7 +78,7 @@ export interface MazeMouseInterface {
    * Moves the mouse.
    * @param cells
    */
-  moveForward(cells: number): boolean;
+  moveForward(cells: number, dontRedraw?: boolean): boolean;
 }
 
 export interface RectMazePerspective {
