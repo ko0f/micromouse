@@ -59,6 +59,7 @@ export class MazeComponent
   mouseSpeeds: string[] = Object.keys(MouseSpeed).filter((e: any) => Number(e) >= 0);
   mouseSpeed: MouseSpeed = MouseSpeed.Medium;
 
+  timeSeconds = 0;
   timeStart: number = 0;
   timeEnd: number = 0;
 
@@ -302,6 +303,7 @@ export class MazeComponent
 
   onMouseMoved(dontRedraw?: boolean) {
     // this.ref.detectChanges();
+    this.setTimeSeconds();
     if (!dontRedraw)
       this.draw();
   }
@@ -330,8 +332,8 @@ export class MazeComponent
     this.timeEnd = +new Date();
   }
 
-  getTimeSeconds() {
-    return ((this.timeEnd || (+new Date())) - this.timeStart) / 1000;
+  setTimeSeconds() {
+    this.timeSeconds = ((this.timeEnd || (+new Date())) - this.timeStart) / 1000;
   }
 
   async gotoCell(cell: Cell) {
