@@ -503,7 +503,7 @@ export class RectMouse extends Mouse {
 
       this.junctions = [[{dir: this.direction, steps: 0}]];
       this.state = MouseState.Pathing;
-      const location = this.location;
+      const location = {...this.location};
       const dir = this.direction;
       await this.findPath(dest);
 
